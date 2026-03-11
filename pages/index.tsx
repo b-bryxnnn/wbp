@@ -22,27 +22,27 @@ export default function Home() {
 			<section className="hero-gradient py-20 md:py-28 relative overflow-hidden">
 				{/* Decorative elements */}
 				<div className="absolute inset-0 pointer-events-none">
-					<div className="absolute -left-32 top-10 w-80 h-80 rounded-full bg-gold/10 blur-3xl" />
-					<div className="absolute right-[-10%] bottom-[-10%] w-[420px] h-[420px] rounded-full bg-gold/8 blur-3xl" />
+					<div className="absolute -left-32 top-10 w-80 h-80 rounded-full bg-gold/20 blur-3xl" />
+					<div className="absolute right-[-10%] bottom-[-10%] w-[420px] h-[420px] rounded-full bg-gold/15 blur-3xl" />
 				</div>
 				<div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-gold to-transparent" />
 
 				<div className="max-w-4xl mx-auto px-4 text-center relative">
 					{/* Emblem */}
 					<div className="mx-auto mb-8">
-						<div className="w-28 h-28 md:w-32 md:h-32 rounded-full bg-white/95 shadow-2xl border-4 border-gold/30 flex items-center justify-center mx-auto">
+						<div className="w-28 h-28 md:w-32 md:h-32 rounded-full bg-white shadow-2xl border-4 border-gold/30 flex items-center justify-center mx-auto">
 							<img src={HOST_LOGO} alt="ตราสัญลักษณ์" className="w-20 h-20 md:w-24 md:h-24 object-contain" />
 						</div>
 					</div>
 
 					<div className="space-y-3 mb-6">
-						<p className="text-gold-200 text-sm md:text-base font-semibold tracking-[0.2em] uppercase flex items-center justify-center gap-2">
+						<p className="text-gold-700 text-sm md:text-base font-semibold tracking-[0.2em] uppercase flex items-center justify-center gap-2">
 							<Sparkles size={14} /> ยินดีต้อนรับ <Sparkles size={14} />
 						</p>
-						<h1 className="text-3xl md:text-5xl font-extrabold text-white leading-tight text-balance">
+						<h1 className="text-3xl md:text-5xl font-extrabold text-royal-900 leading-tight text-balance">
 							โรงเรียนรัตนโกสินทร์สมโภชลาดกระบัง
 						</h1>
-						<h2 className="text-xl md:text-3xl font-bold text-gold-200 text-balance">
+						<h2 className="text-xl md:text-3xl font-bold text-royal-700 text-balance">
 							มีความยินดีอย่างยิ่งที่ได้ต้อนรับคณะผู้แทนสภานักเรียนในเครือสหวิทยาเขตวชิรบูรพา
 						</h2>
 					</div>
@@ -51,9 +51,9 @@ export default function Home() {
 						<div className="diamond" />
 					</div>
 
-										<p className="text-gold-100 text-base md:text-lg max-w-2xl mx-auto mb-1 leading-relaxed font-medium text-balance">
-											อบรมโครงการส่งเสริมภาวะผู้นำและศักยภาพสภานักเรียน พร้อมระบบลงมติออนไลน์
-										</p>
+																						<p className="text-royal-600 text-base md:text-lg max-w-2xl mx-auto mb-1 leading-relaxed font-medium text-balance">
+																							อบรมโครงการส่งเสริมภาวะผู้นำและศักยภาพสภานักเรียน พร้อมระบบลงมติออนไลน์
+																						</p>
 					<p className="text-royal-400 text-sm md:text-base mb-10">
 						สำนักงานเขตพื้นที่การศึกษามัธยมศึกษากรุงเทพมหานคร เขต 2
 					</p>

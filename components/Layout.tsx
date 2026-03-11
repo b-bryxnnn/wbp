@@ -58,10 +58,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <div className="h-1 bg-gradient-to-r from-transparent via-gold to-transparent" />
 
         {/* Header */}
-        <header className="bg-black/40 backdrop-blur-xl border-b border-gold/15 sticky top-0 z-50">
+        <header className="bg-white/85 backdrop-blur-xl border-b border-gold/15 sticky top-0 z-50 shadow-sm">
           <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
             <Link href="/" className="flex items-center gap-3 no-underline group">
-              <div className="w-11 h-11 rounded-xl bg-white/90 border border-gold/30 shadow-lg shadow-black/20 flex items-center justify-center overflow-hidden group-hover:shadow-2xl transition-all">
+              <div className="w-11 h-11 rounded-xl bg-white border border-gold/30 shadow-lg shadow-black/10 flex items-center justify-center overflow-hidden group-hover:shadow-xl transition-all">
                 <img
                   src={HOST_LOGO}
                   alt="ตราสัญลักษณ์"
@@ -69,8 +69,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 />
               </div>
               <div>
-                <div className="text-sm font-bold text-white leading-tight">สภานักเรียน</div>
-                <div className="text-xs text-gold-200 leading-tight">สหวิทยาเขตวชิรบูรพา</div>
+                <div className="text-sm font-bold text-royal-900 leading-tight">สภานักเรียน</div>
+                <div className="text-xs text-royal-400 leading-tight">สหวิทยาเขตวชิรบูรพา</div>
               </div>
             </Link>
 
@@ -84,8 +84,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     href={item.href}
                     className={`px-3.75 py-2.5 rounded-lg text-sm font-semibold no-underline transition-all flex items-center gap-1.5 ${
                       active
-                        ? "bg-white/15 text-white border border-white/20 shadow-lg shadow-black/20"
-                        : "text-gold-200 hover:bg-white/10 hover:text-white"
+                        ? "bg-gold/15 text-royal-900 border border-gold/30 shadow-sm"
+                        : "text-royal-500 hover:bg-gold/10 hover:text-royal-800"
                     }`}
                   >
                     {Icon && <Icon size={15} />}
@@ -101,15 +101,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <main className="flex-1">{children}</main>
 
         {/* Footer */}
-        <footer className="border-t border-gold/15 bg-black/40 backdrop-blur-xl text-center">
+        <footer className="border-t border-gold/15 bg-white/80 backdrop-blur-xl text-center">
           <div className="max-w-7xl mx-auto px-4 py-6">
             <div className="ornament-divider mb-3">
               <div className="diamond" />
             </div>
-            <p className="text-xs text-gold-100">
+            <p className="text-xs text-royal-500">
               อบรมโครงการส่งเสริมภาวะผู้นำและศักยภาพสภานักเรียน — โรงเรียนในสหวิทยาเขตวชิรบูรพา
             </p>
-            <p className="text-xs text-gold-200 mt-1">
+            <p className="text-xs text-royal-400 mt-1">
               วันพฤหัสบดี ที่ 12 มีนาคม 2569 ณ โรงเรียนรัตนโกสินทร์สมโภชลาดกระบัง
             </p>
           </div>
