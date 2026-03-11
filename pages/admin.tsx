@@ -213,11 +213,11 @@ export default function Admin() {
       <div className="animate-fade-in min-h-[70vh] flex items-center justify-center px-4">
         <div className="w-full max-w-md">
           <div className="card-royal">
-            <div className="text-center mb-8">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-gold-300 to-gold-600 flex items-center justify-center text-white mx-auto mb-4 shadow-gold">
-                <ShieldCheck size={32} />
+            <div className="text-center mb-6 sm:mb-8">
+              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-gold-300 to-gold-600 flex items-center justify-center text-white mx-auto mb-4 shadow-gold">
+                <ShieldCheck size={28} />
               </div>
-              <h2 className="text-2xl font-extrabold text-royal-900">เข้าสู่ระบบผู้ดูแล</h2>
+              <h2 className="text-xl sm:text-2xl font-extrabold text-royal-900">เข้าสู่ระบบผู้ดูแล</h2>
               <p className="text-sm text-royal-400 mt-2">กรุณากรอกรหัสผ่านเพื่อเข้าจัดการระบบ</p>
             </div>
             <div className="space-y-4">
@@ -269,7 +269,7 @@ export default function Admin() {
   const tabs = [
     { id: "main", label: "ควบคุมหลัก", icon: Settings },
     { id: "motions", label: "ญัตติ/มติ", icon: Vote },
-    { id: "login", label: "จัดการล็อกอิน", icon: Key },
+    { id: "login", label: "ล็อกอิน", icon: Key },
     { id: "qr", label: "QR Code", icon: QrCode },
     { id: "reports", label: "รายงาน", icon: FileText },
     { id: "settings", label: "ตั้งค่า", icon: Lock },
@@ -277,113 +277,116 @@ export default function Admin() {
 
   // ===== Admin Panel (authenticated) =====
   return (
-    <div className="animate-fade-in max-w-6xl mx-auto px-4 py-6">
+    <div className="animate-fade-in max-w-6xl mx-auto px-3 sm:px-4 py-4 sm:py-6">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
-        <div>
-          <h2 className="text-2xl font-extrabold text-royal-900 flex items-center gap-2">
-            <Settings size={24} /> หน้าผู้ดูแลระบบ
+      <div className="flex items-center justify-between mb-4 sm:mb-6 gap-3">
+        <div className="min-w-0">
+          <h2 className="text-lg sm:text-2xl font-extrabold text-royal-900 flex items-center gap-2">
+            <Settings size={20} className="flex-shrink-0" /> <span className="hidden sm:inline">หน้าผู้ดูแลระบบ</span><span className="sm:hidden">ผู้ดูแลระบบ</span>
           </h2>
-          <div className="flex gap-2 mt-2">
+          <div className="flex flex-wrap gap-1.5 mt-1.5">
             <span className={state.votingOpen ? "badge-success" : "badge-danger"}>
               <span className={`w-2 h-2 rounded-full inline-block ${state.votingOpen ? "bg-green-500" : "bg-red-500"}`} />
-              {state.votingOpen ? "เปิดรับโหวต" : "ปิดรับโหวต"}
+              {state.votingOpen ? "เปิดโหวต" : "ปิดโหวต"}
             </span>
             <span className="badge-gold">
-              <School size={12} /> องค์ประชุม {presentSchools}/{totalSchools}
+              <School size={12} /> {presentSchools}/{totalSchools}
             </span>
           </div>
         </div>
         <button
-          className="btn-outline-gold text-sm flex items-center gap-1.5 self-start"
+          className="btn-outline-gold text-xs sm:text-sm flex items-center gap-1.5 flex-shrink-0 py-2 px-3"
           onClick={() => {
             document.cookie = "admin_token=; path=/; max-age=0";
             setAuthed(false);
           }}
         >
-          <LogOut size={14} /> ออกจากระบบ
+          <LogOut size={14} /> <span className="hidden sm:inline">ออกจากระบบ</span>
         </button>
       </div>
 
-      {/* Tab Navigation */}
-      <div className="flex gap-1 overflow-x-auto pb-1 mb-6 border-b border-gold/15 no-print">
+      {/* Tab Navigation — scrollable on mobile, always show labels */}
+      <div className="flex gap-0.5 overflow-x-auto pb-1 mb-4 sm:mb-6 border-b border-gold/15 no-print -mx-3 px-3 sm:mx-0 sm:px-0 scrollbar-hide">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold rounded-t-lg whitespace-nowrap transition-all ${
+            className={`flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold rounded-t-lg whitespace-nowrap transition-all ${
               activeTab === tab.id
                 ? "bg-white text-royal-800 border border-gold/20 border-b-white -mb-px shadow-sm"
                 : "text-royal-400 hover:text-royal-600 hover:bg-gold/5"
             }`}
           >
-            <tab.icon size={15} />
-            <span className="hidden sm:inline">{tab.label}</span>
+            <tab.icon size={14} className="flex-shrink-0" />
+            {tab.label}
           </button>
         ))}
       </div>
 
       {/* ===== TAB: Main Control ===== */}
       {activeTab === "main" && (
-        <div className="grid gap-6 lg:grid-cols-2 animate-fade-in">
+        <div className="grid gap-4 sm:gap-6 lg:grid-cols-2 animate-fade-in">
           {/* ควบคุมหน้าจอใหญ่ */}
-          <div className="card-royal">
-            <h3 className="section-title mb-4"><Monitor size={16} className="text-gold-600" /> ควบคุมหน้าจอใหญ่</h3>
+          <div className="card-royal !p-4 sm:!p-6">
+            <h3 className="section-title mb-3 sm:mb-4"><Monitor size={16} className="text-gold-600" /> ควบคุมหน้าจอใหญ่</h3>
             <textarea
-              className="input-royal mb-3" rows={3} value={message}
+              className="input-royal mb-3" rows={2} value={message}
               onChange={(e) => setMessage(e.target.value)}
               placeholder="พิมพ์ข้อความที่ต้องการแสดงบนจอใหญ่..."
             />
-            <button className="btn-gold w-full flex items-center justify-center gap-2" onClick={sendMessage}>
+            <button className="btn-gold w-full flex items-center justify-center gap-2 text-sm sm:text-base" onClick={sendMessage}>
               <Radio size={16} /> อัปเดตข้อความจอใหญ่
             </button>
           </div>
 
           {/* เช็คชื่อแบบสด */}
-          <div className="card-royal">
-            <h3 className="section-title mb-4"><ClipboardList size={16} className="text-gold-600" /> เช็คชื่อแบบสด</h3>
-            <div className="flex gap-3 items-center flex-wrap mb-4">
-              <select className="input-royal flex-1" value={checkInSchool}
+          <div className="card-royal !p-4 sm:!p-6">
+            <h3 className="section-title mb-3 sm:mb-4"><ClipboardList size={16} className="text-gold-600" /> เช็คชื่อแบบสด</h3>
+            <div className="flex gap-2 items-center mb-4">
+              <select className="input-royal flex-1 min-w-0 text-sm" value={checkInSchool}
                 onChange={(e) => setCheckInSchool(e.target.value ? Number(e.target.value) : "")}>
                 <option value="">-- เลือกโรงเรียน --</option>
                 {state.schools.map((s) => (
                   <option key={s.id} value={s.id}>{s.name}</option>
                 ))}
               </select>
-              <button className="btn-gold whitespace-nowrap flex items-center gap-1" onClick={checkIn}>
-                <CheckCircle size={16} /> เช็คชื่อ
+              <button className="btn-gold whitespace-nowrap flex items-center gap-1 flex-shrink-0 text-sm px-3" onClick={checkIn}>
+                <CheckCircle size={14} /> เช็คชื่อ
               </button>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+            {/* School list — full names, 1 col mobile, 2 cols tablet+ */}
+            <div className="space-y-1.5 sm:grid sm:grid-cols-2 sm:gap-2 sm:space-y-0">
               {state.schools.map((s) => (
                 <div key={s.id}
-                  className={`p-3 rounded-lg border font-medium transition-all flex items-center gap-2.5 ${
+                  className={`p-2.5 sm:p-3 rounded-lg border font-medium transition-all flex items-start gap-2 ${
                     state.attendance[s.id]
                       ? "bg-green-50 border-green-300 text-green-800"
                       : "bg-white border-gold/15 text-royal-400"
                   }`}>
                   {s.logoUrl ? (
-                    <img src={s.logoUrl.replace(/^http:\/\//i, "https://")} alt="" className="school-avatar-sm" />
+                    <img src={s.logoUrl.replace(/^http:\/\//i, "https://")} alt="" className="school-avatar-sm flex-shrink-0 mt-0.5" />
                   ) : (
-                    <div className="w-7 h-7 rounded-full bg-gold/10 flex items-center justify-center flex-shrink-0">
+                    <div className="w-7 h-7 rounded-full bg-gold/10 flex items-center justify-center flex-shrink-0 mt-0.5">
                       <School size={13} className="text-gold-500" />
                     </div>
                   )}
-                  {state.attendance[s.id] ? <CheckCircle size={14} className="text-green-600 flex-shrink-0" /> : <Square size={14} className="flex-shrink-0" />}
-                  <span className="leading-snug text-sm break-words">{s.name}</span>
+                  {state.attendance[s.id]
+                    ? <CheckCircle size={14} className="text-green-600 flex-shrink-0 mt-1" />
+                    : <Square size={14} className="flex-shrink-0 mt-1" />}
+                  <span className="text-sm leading-snug min-w-0 break-words">{s.name}</span>
                 </div>
               ))}
             </div>
           </div>
 
           {/* Audit Log */}
-          <div className="card-royal lg:col-span-2">
-            <h3 className="section-title mb-4"><ScrollText size={16} className="text-gold-600" /> บันทึกการทำงาน</h3>
+          <div className="card-royal !p-4 sm:!p-6 lg:col-span-2">
+            <h3 className="section-title mb-3 sm:mb-4"><ScrollText size={16} className="text-gold-600" /> บันทึกการทำงาน</h3>
             <div className="max-h-48 overflow-y-auto space-y-1.5">
               {state.auditLogs.map((log, idx) => (
-                <div key={idx} className="flex justify-between bg-cream-50 border border-gold/10 p-2.5 rounded-lg text-sm">
-                  <span className="text-royal-700">{log.action} {log.detail ? `— ${log.detail}` : ""}</span>
-                  <span className="text-royal-300 text-xs whitespace-nowrap ml-2">{new Date(log.at).toLocaleTimeString()}</span>
+                <div key={idx} className="flex justify-between gap-2 bg-cream-50 border border-gold/10 p-2 sm:p-2.5 rounded-lg text-xs sm:text-sm">
+                  <span className="text-royal-700 min-w-0">{log.action} {log.detail ? `— ${log.detail}` : ""}</span>
+                  <span className="text-royal-300 text-xs whitespace-nowrap flex-shrink-0">{new Date(log.at).toLocaleTimeString()}</span>
                 </div>
               ))}
               {state.auditLogs.length === 0 && (
@@ -400,14 +403,14 @@ export default function Admin() {
       {/* ===== TAB: Motions ===== */}
       {activeTab === "motions" && (
         <div className="animate-fade-in">
-          <div className="card-royal">
-            <h3 className="section-title mb-5"><Vote size={16} className="text-gold-600" /> จัดการญัตติ/มติ</h3>
-            <div className="grid md:grid-cols-2 gap-6 mb-6">
+          <div className="card-royal !p-4 sm:!p-6">
+            <h3 className="section-title mb-4 sm:mb-5"><Vote size={16} className="text-gold-600" /> จัดการญัตติ/มติ</h3>
+            <div className="grid md:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
               <div className="space-y-3">
                 <label className="text-sm font-semibold text-royal-600">เพิ่มญัตติใหม่</label>
                 <input className="input-royal" placeholder="ชื่อญัตติ" value={motionTitle} onChange={(e) => setMotionTitle(e.target.value)} />
                 <textarea className="input-royal" placeholder="คำอธิบาย (ไม่บังคับ)" rows={3} value={motionDescription} onChange={(e) => setMotionDescription(e.target.value)} />
-                <button className="btn-gold w-full flex items-center justify-center gap-2" onClick={addMotion}>
+                <button className="btn-gold w-full flex items-center justify-center gap-2 text-sm sm:text-base" onClick={addMotion}>
                   <Plus size={16} /> เพิ่มญัตติ
                 </button>
               </div>
@@ -417,35 +420,35 @@ export default function Admin() {
                   <option value="">-- เลือกญัตติ --</option>
                   {state.motions.map((m) => (<option key={m.id} value={m.id}>{m.title}</option>))}
                 </select>
-                <div className="grid grid-cols-3 gap-2">
-                  <button className="px-3 py-2.5 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-all text-sm hover:-translate-y-0.5" onClick={() => toggleVote(true)}>เปิดโหวต</button>
-                  <button className="px-3 py-2.5 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition-all text-sm hover:-translate-y-0.5" onClick={() => toggleVote(false)}>ปิดโหวต</button>
-                  <button className="px-3 py-2.5 bg-gold-600 text-white rounded-lg font-semibold hover:bg-gold-700 transition-all text-sm flex items-center justify-center gap-1 hover:-translate-y-0.5" onClick={setCountdownTimer}>
-                    <Timer size={14} /> Countdown
+                <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
+                  <button className="px-2 sm:px-3 py-2.5 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-all text-xs sm:text-sm" onClick={() => toggleVote(true)}>เปิดโหวต</button>
+                  <button className="px-2 sm:px-3 py-2.5 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition-all text-xs sm:text-sm" onClick={() => toggleVote(false)}>ปิดโหวต</button>
+                  <button className="px-2 sm:px-3 py-2.5 bg-gold-600 text-white rounded-lg font-semibold hover:bg-gold-700 transition-all text-xs sm:text-sm flex items-center justify-center gap-1" onClick={setCountdownTimer}>
+                    <Timer size={12} /> จับเวลา
                   </button>
                 </div>
                 <div className="flex items-center gap-2">
-                  <label className="text-sm text-royal-500 whitespace-nowrap">ตั้งเวลา:</label>
-                  <input type="number" className="input-royal w-24" value={countdown} onChange={(e) => setCountdown(Number(e.target.value))} />
-                  <span className="text-sm text-royal-400">วินาที</span>
+                  <label className="text-xs sm:text-sm text-royal-500 whitespace-nowrap">ตั้งเวลา:</label>
+                  <input type="number" className="input-royal w-20" value={countdown} onChange={(e) => setCountdown(Number(e.target.value))} />
+                  <span className="text-xs sm:text-sm text-royal-400">วินาที</span>
                 </div>
               </div>
             </div>
             {state.motions.length > 0 && (
-              <div className="border-t border-gold/15 pt-5">
+              <div className="border-t border-gold/15 pt-4">
                 <p className="text-sm font-semibold text-royal-600 mb-3">ญัตติทั้งหมด ({state.motions.length})</p>
                 <div className="space-y-2 max-h-64 overflow-y-auto">
                   {state.motions.map((m) => {
                     const v = state.votes[m.id] || { AGREE: 0, DISAGREE: 0, ABSTAIN: 0 };
                     return (
-                      <div key={m.id} className={`flex items-center justify-between p-3.5 rounded-lg border text-sm transition-all ${
-                        state.activeMotionId === m.id ? "bg-gold-50 border-gold shadow-sm" : "bg-white border-gold/10 hover:border-gold/25"
+                      <div key={m.id} className={`flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-2 p-3 rounded-lg border text-sm transition-all ${
+                        state.activeMotionId === m.id ? "bg-gold-50 border-gold shadow-sm" : "bg-white border-gold/10"
                       }`}>
-                        <div>
-                          <span className="font-semibold text-royal-800">{m.title}</span>
+                        <div className="min-w-0">
+                          <span className="font-semibold text-royal-800 text-xs sm:text-sm">{m.title}</span>
                           {state.activeMotionId === m.id && <span className="ml-2 badge-gold text-xs">กำลังใช้งาน</span>}
                         </div>
-                        <div className="flex gap-3 text-xs font-mono">
+                        <div className="flex gap-3 text-xs font-mono flex-shrink-0">
                           <span className="text-green-600 flex items-center gap-0.5"><ThumbsUp size={11} /> {v.AGREE}</span>
                           <span className="text-red-600 flex items-center gap-0.5"><ThumbsDown size={11} /> {v.DISAGREE}</span>
                           <span className="text-yellow-600 flex items-center gap-0.5"><Hand size={11} /> {v.ABSTAIN}</span>
@@ -463,9 +466,9 @@ export default function Admin() {
       {/* ===== TAB: Login Settings ===== */}
       {activeTab === "login" && (
         <div className="animate-fade-in">
-          <div className="card-royal">
-            <h3 className="section-title mb-5"><Key size={16} className="text-gold-600" /> ตั้งค่าการเข้าสู่ระบบ</h3>
-            <div className="grid md:grid-cols-2 gap-6">
+          <div className="card-royal !p-4 sm:!p-6">
+            <h3 className="section-title mb-4 sm:mb-5"><Key size={16} className="text-gold-600" /> ตั้งค่าการเข้าสู่ระบบ</h3>
+            <div className="grid md:grid-cols-2 gap-4 sm:gap-6">
               <div className="space-y-4">
                 <div>
                   <label className="text-sm font-semibold text-royal-600 mb-2 block">โหมดการเข้าสู่ระบบ</label>
@@ -477,7 +480,7 @@ export default function Admin() {
                     {loginMode === "PER_SCHOOL" ? "แต่ละโรงเรียนใช้บัญชีเดียวร่วมกัน" : "แต่ละบุคคลมีบัญชีแยกของตัวเอง"}
                   </p>
                 </div>
-                <button className="btn-gold w-full flex items-center justify-center gap-2" onClick={generateCredentials} disabled={generating}>
+                <button className="btn-gold w-full flex items-center justify-center gap-2 text-sm sm:text-base" onClick={generateCredentials} disabled={generating}>
                   {generating ? <RefreshCw size={16} className="animate-spin" /> : <Key size={16} />}
                   {generating ? "กำลังสร้าง..." : "สุ่มชื่อผู้ใช้และรหัสผ่าน"}
                 </button>
@@ -485,16 +488,16 @@ export default function Admin() {
               {credentials.length > 0 && (
                 <div>
                   <div className="flex items-center justify-between mb-3">
-                    <p className="text-sm font-semibold text-royal-600">ข้อมูลบัญชีที่สร้างแล้ว</p>
+                    <p className="text-sm font-semibold text-royal-600">บัญชีที่สร้างแล้ว</p>
                     <button className="text-xs text-gold-600 hover:underline flex items-center gap-1" onClick={() => window.print()}>
                       <Printer size={12} /> พิมพ์
                     </button>
                   </div>
                   <div className="max-h-60 overflow-y-auto space-y-2">
                     {credentials.map((c, i) => (
-                      <div key={i} className="bg-cream-50 border border-gold/15 rounded-lg p-3 text-sm">
-                        <div className="font-semibold text-royal-800">{c.name}</div>
-                        <div className="text-royal-500 font-mono text-xs mt-1">
+                      <div key={i} className="bg-cream-50 border border-gold/15 rounded-lg p-2.5 sm:p-3">
+                        <div className="font-semibold text-royal-800 text-xs sm:text-sm leading-snug">{c.name}</div>
+                        <div className="text-royal-500 font-mono text-[10px] sm:text-xs mt-1 break-all">
                           ผู้ใช้: <span className="text-royal-700 bg-gold/10 px-1 rounded">{c.username}</span> &nbsp; รหัส: <span className="text-royal-700 bg-gold/10 px-1 rounded">{c.password}</span>
                         </div>
                       </div>
@@ -510,30 +513,30 @@ export default function Admin() {
       {/* ===== TAB: QR Code ===== */}
       {activeTab === "qr" && (
         <div className="animate-fade-in">
-          <div className="card-royal">
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="section-title"><QrCode size={16} className="text-gold-600" /> QR เข้าสู่ระบบ ({loginMode === "PER_SCHOOL" ? "ต่อโรงเรียน" : "ต่อบุคคล"})</h3>
-              <button className="text-sm text-gold-600 hover:underline flex items-center gap-1 no-print" onClick={() => window.print()}>
+          <div className="card-royal !p-4 sm:!p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 sm:mb-5">
+              <h3 className="section-title text-sm sm:text-base"><QrCode size={16} className="text-gold-600" /> QR เข้าสู่ระบบ</h3>
+              <button className="text-sm text-gold-600 hover:underline flex items-center gap-1 no-print self-end" onClick={() => window.print()}>
                 <Printer size={14} /> พิมพ์ QR ทั้งหมด
               </button>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
               {schools.map((s) => {
                 const url = typeof window !== "undefined" ? `${window.location.origin}/vote?token=${s.loginToken}` : "";
                 return (
-                  <div key={s.id} className="bg-white rounded-xl border border-gold/15 p-5 text-center space-y-3 hover:shadow-md transition-shadow">
+                  <div key={s.id} className="bg-white rounded-xl border border-gold/15 p-3 sm:p-4 text-center space-y-2 sm:space-y-3 hover:shadow-md transition-shadow">
                     {s.logoUrl && (
                       <div className="flex justify-center">
                         <img src={s.logoUrl.replace(/^http:\/\//i, "https://")} alt={s.name} className="school-avatar" />
                       </div>
                     )}
-                    <div className="font-semibold text-sm text-royal-700">{s.name}</div>
+                    <div className="font-semibold text-xs sm:text-sm text-royal-700 leading-snug">{s.name}</div>
                     <div className="flex justify-center">
-                      <div className="bg-white p-3 rounded-lg border border-gold/10">
-                        <QRCode value={url || "loading"} bgColor="#ffffff" fgColor="#2d2312" size={120} />
+                      <div className="bg-white p-2 sm:p-3 rounded-lg border border-gold/10">
+                        <QRCode value={url || "loading"} bgColor="#ffffff" fgColor="#2d2312" size={100} />
                       </div>
                     </div>
-                    <div className="text-[10px] break-all text-royal-300 leading-tight">{url}</div>
+                    <div className="text-[9px] sm:text-[10px] break-all text-royal-300 leading-tight">{url}</div>
                   </div>
                 );
               })}
@@ -545,14 +548,14 @@ export default function Admin() {
       {/* ===== TAB: Reports ===== */}
       {activeTab === "reports" && (
         <div className="animate-fade-in max-w-lg mx-auto">
-          <div className="card-royal">
-            <h3 className="section-title mb-5"><FileText size={16} className="text-gold-600" /> ออกรายงาน</h3>
+          <div className="card-royal !p-4 sm:!p-6">
+            <h3 className="section-title mb-4 sm:mb-5"><FileText size={16} className="text-gold-600" /> ออกรายงาน</h3>
             <p className="text-sm text-royal-400 mb-4">เลือกรูปแบบการส่งออกข้อมูลผลการลงมติ</p>
             <div className="grid gap-3">
-              <a href="/api/export?type=pdf" className="btn-gold text-center flex items-center justify-center gap-2 py-3.5 text-base">
+              <a href="/api/export?type=pdf" className="btn-gold text-center flex items-center justify-center gap-2 py-3 text-sm sm:text-base">
                 <FileText size={18} /> Export PDF
               </a>
-              <a href="/api/export?type=excel" className="btn-outline-gold text-center flex items-center justify-center gap-2 py-3.5 text-base">
+              <a href="/api/export?type=excel" className="btn-outline-gold text-center flex items-center justify-center gap-2 py-3 text-sm sm:text-base">
                 <FileSpreadsheet size={18} /> Export Excel
               </a>
             </div>
@@ -563,8 +566,8 @@ export default function Admin() {
       {/* ===== TAB: Settings (Change Admin Password) ===== */}
       {activeTab === "settings" && (
         <div className="animate-fade-in max-w-lg mx-auto">
-          <div className="card-royal">
-            <h3 className="section-title mb-5"><KeyRound size={16} className="text-gold-600" /> เปลี่ยนรหัสผ่านผู้ดูแล</h3>
+          <div className="card-royal !p-4 sm:!p-6">
+            <h3 className="section-title mb-4 sm:mb-5"><KeyRound size={16} className="text-gold-600" /> เปลี่ยนรหัสผ่านผู้ดูแล</h3>
             <div className="space-y-4">
               <div>
                 <label className="text-sm font-semibold text-royal-600 mb-1.5 block">รหัสผ่านใหม่</label>

@@ -13,6 +13,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     res.status(200).json({ schools });
   } catch (err: any) {
     console.error("GET /api/schools error:", err);
-    res.status(500).json({ error: "ไม่สามารถโหลดรายชื่อโรงเรียนได้", detail: err.message });
+    // Return empty array instead of 500 so the UI still renders
+    res.status(200).json({ schools: [], _dbError: true });
   }
 }

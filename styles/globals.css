@@ -344,3 +344,22 @@ body {
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.05em;
 }
+
+/* ===== Hide scrollbar on horizontal scroll (tabs) ===== */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* ===== Mobile card padding override ===== */
+@media (max-width: 639px) {
+  .card-royal,
+  .card-royal-flat,
+  .card-glass {
+    padding: 1rem;
+  }
+}
+

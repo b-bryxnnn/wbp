@@ -7,7 +7,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     if (req.method === "GET") {
-      const control = await prisma.controlState.findUnique({ where: { id: 1 } });
+      let control: any = null;
+      try {
+        control = await prisma.controlState.findUnique({ where: { id: 1 } });
+      } catch {
+        // DB not ready — return default
+      }
       return res.status(200).json({ loginMode: control?.loginMode || "PER_SCHOOL" });
     }
     if (req.method === "PUT") {
@@ -21,6 +26,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).end();
   } catch (err: any) {
     console.error("login-mode error:", err);
-    return res.status(500).json({ error: "เกิดข้อผิดพลาด", detail: err.message });
+    return res.status(200).json({ loginMode: "PER_SCHOOL", _dbError: true });
   }
 }
