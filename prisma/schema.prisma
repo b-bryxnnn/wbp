@@ -54,14 +54,15 @@ enum LoginMode {
 }
 
 model Motion {
-  id          Int      @id @default(autoincrement())
-  title       String
-  description String
-  createdAt   DateTime @default(now())
-  isActive    Boolean  @default(false)
-  votes       Vote[]
-  auditLogs   AuditLog[]
-  updatedAt   DateTime @updatedAt
+  id             Int      @id @default(autoincrement())
+  title          String
+  description    String
+  allowedChoices String?  // JSON array of allowed VoteChoice values e.g. ["AGREE","DISAGREE","ABSTAIN"]
+  createdAt      DateTime @default(now())
+  isActive       Boolean  @default(false)
+  votes          Vote[]
+  auditLogs      AuditLog[]
+  updatedAt      DateTime @updatedAt
 }
 
 model Vote {
@@ -81,6 +82,8 @@ enum VoteChoice {
   AGREE
   DISAGREE
   ABSTAIN
+  ACKNOWLEDGE
+  RESOLUTION
 }
 
 model Attendance {
@@ -105,6 +108,7 @@ model AuditLog {
   action    String
   timestamp DateTime @default(now())
   details   String?
+  ipAddress String?
   @@index([timestamp])
 }
 

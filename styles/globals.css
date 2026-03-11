@@ -51,10 +51,10 @@ body {
 .card-royal {
   background: #ffffff;
   border: 1px solid rgba(200, 162, 78, 0.15);
-  border-top: 3px solid #c8a24e;
+  border-top: 4px solid #c8a24e;
   border-radius: 12px;
   padding: 1.5rem;
-  box-shadow: 0 1px 8px rgba(0,0,0,0.04), 0 0 0 1px rgba(200,162,78,0.05);
+  box-shadow: 0 1px 8px rgba(0,0,0,0.04), 0 0 0 1px rgba(200,162,78,0.05), inset 0 1px 0 rgba(200,162,78,0.06);
   transition: box-shadow 0.3s ease, transform 0.3s ease;
 }
 .card-royal:hover {
@@ -290,6 +290,22 @@ body {
 }
 .vote-btn-abstain:hover {
   box-shadow: 0 8px 32px rgba(234,179,8,0.4);
+  transform: translateY(-2px);
+}
+.vote-btn-acknowledge {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  box-shadow: 0 4px 20px rgba(59,130,246,0.3);
+}
+.vote-btn-acknowledge:hover {
+  box-shadow: 0 8px 32px rgba(59,130,246,0.4);
+  transform: translateY(-2px);
+}
+.vote-btn-resolution {
+  background: linear-gradient(135deg, #a855f7, #7c3aed);
+  box-shadow: 0 4px 20px rgba(168,85,247,0.3);
+}
+.vote-btn-resolution:hover {
+  box-shadow: 0 8px 32px rgba(168,85,247,0.4);
   transform: translateY(-2px);
 }
 

@@ -4,17 +4,24 @@ import { useRouter } from "next/router";
 import {
   Vote as VoteIcon, School, User, QrCode, LogIn,
   ThumbsUp, ThumbsDown, Hand, CheckCircle, Clock, Inbox,
-  ClipboardList, Lock, AlertTriangle,
+  ClipboardList, Lock, AlertTriangle, BookCheck, FileCheck2, Edit3,
 } from "lucide-react";
 
+const CHOICE_META: Record<string, { label: string; Icon: any; btnClass: string }> = {
+  AGREE: { label: "เห็นด้วย", Icon: ThumbsUp, btnClass: "vote-btn vote-btn-agree" },
+  DISAGREE: { label: "ไม่เห็นด้วย", Icon: ThumbsDown, btnClass: "vote-btn vote-btn-disagree" },
+  ABSTAIN: { label: "งดออกเสียง", Icon: Hand, btnClass: "vote-btn vote-btn-abstain" },
+  ACKNOWLEDGE: { label: "รับทราบ", Icon: BookCheck, btnClass: "vote-btn vote-btn-acknowledge" },
+  RESOLUTION: { label: "มติ", Icon: FileCheck2, btnClass: "vote-btn vote-btn-resolution" },
+};
 
-type VoteChoice = "AGREE" | "DISAGREE" | "ABSTAIN";
-type Motion = { id: number; title: string; description: string; isActive: boolean };
+type VoteChoice = "AGREE" | "DISAGREE" | "ABSTAIN" | "ACKNOWLEDGE" | "RESOLUTION";
+type Motion = { id: number; title: string; description: string; isActive: boolean; allowedChoices?: string[] };
 type SchoolT = { id: number; name: string; loginToken?: string; logoUrl?: string };
 
 type State = {
   motions: Motion[];
-  votes: Record<number, Record<VoteChoice, number>>;
+  votes: Record<number, Record<string, number>>;
   attendance: Record<number, boolean>;
   bigScreenMessage: string;
   votingOpen: boolean;
@@ -37,7 +44,23 @@ export default function VotePage() {
   const [loginError, setLoginError] = useState("");
   const [loginLoading, setLoginLoading] = useState(false);
   const [kicked, setKicked] = useState<string | null>(null);
+  const [geoStatus, setGeoStatus] = useState<"idle" | "getting" | "ok" | "denied">("idle");
+  const [geoCoords, setGeoCoords] = useState<{ lat: number; lng: number } | null>(null);
   const router = useRouter();
+
+  // Get geolocation on mount
+  useEffect(() => {
+    if (!navigator.geolocation) { setGeoStatus("denied"); return; }
+    setGeoStatus("getting");
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setGeoCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        setGeoStatus("ok");
+      },
+      () => { setGeoStatus("denied"); },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  }, []);
 
   // Setup socket connection
   useEffect(() => {
@@ -47,12 +70,8 @@ export default function VotePage() {
     // Listen for session invalidation (another device logged in)
     s.on("session:invalid", (data: { reason: string }) => {
       setKicked(data.reason || "เซสชันหมดอายุ");
-      setAuthToken(null);
-      setSessionToken(null);
-      setSchoolId("");
-      setVoter("");
-      localStorage.removeItem("auth_token");
-      localStorage.removeItem("session_token");
+      setAuthToken(null); setSessionToken(null); setSchoolId(""); setVoter("");
+      localStorage.removeItem("auth_token"); localStorage.removeItem("session_token");
     });
     return () => { s.disconnect(); };
   }, []);
@@ -70,46 +89,37 @@ export default function VotePage() {
     if (!token) return;
     const login = async () => {
       try {
-        const res = await fetch(`/api/auth/qr?token=${token}`);
-        if (!res.ok) return;
+        let url = `/api/auth/qr?token=${token}`;
+        if (geoCoords) url += `&lat=${geoCoords.lat}&lng=${geoCoords.lng}`;
+        const res = await fetch(url);
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          if (data.error) setLoginError(data.error);
+          return;
+        }
         const data = await res.json();
-        setAuthToken(data.token);
-        setSessionToken(data.sessionToken);
-        localStorage.setItem("auth_token", data.token);
-        localStorage.setItem("session_token", data.sessionToken);
-        setSchoolId(data.school.id);
-        setVoter(data.user.name);
-        setKicked(null);
-      } catch (e) {
-        console.error(e);
-      }
+        setAuthToken(data.token); setSessionToken(data.sessionToken);
+        localStorage.setItem("auth_token", data.token); localStorage.setItem("session_token", data.sessionToken);
+        setSchoolId(data.school.id); setVoter(data.user.name); setKicked(null);
+      } catch (e) { console.error(e); }
     };
     void login();
-  }, [router.query.token]);
+  }, [router.query.token, geoCoords]);
 
   const handlePasswordLogin = async () => {
-    setLoginError("");
-    setLoginLoading(true);
+    setLoginError(""); setLoginLoading(true);
     try {
+      const body: any = { username, password };
+      if (geoCoords) { body.lat = geoCoords.lat; body.lng = geoCoords.lng; }
       const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
       });
       const data = await res.json();
       if (!res.ok) { setLoginError(data.error || "เข้าสู่ระบบไม่สำเร็จ"); return; }
-      setAuthToken(data.token);
-      setSessionToken(data.sessionToken);
-      localStorage.setItem("auth_token", data.token);
-      localStorage.setItem("session_token", data.sessionToken);
-      setSchoolId(data.school.id);
-      setVoter(data.user.name);
-      setKicked(null);
-    } catch {
-      setLoginError("เกิดข้อผิดพลาดในการเชื่อมต่อ");
-    } finally {
-      setLoginLoading(false);
-    }
+      setAuthToken(data.token); setSessionToken(data.sessionToken);
+      localStorage.setItem("auth_token", data.token); localStorage.setItem("session_token", data.sessionToken);
+      setSchoolId(data.school.id); setVoter(data.user.name); setKicked(null);
+    } catch { setLoginError("เกิดข้อผิดพลาดในการเชื่อมต่อ"); } finally { setLoginLoading(false); }
   };
 
   const activeMotion = useMemo(
@@ -117,14 +127,13 @@ export default function VotePage() {
     [state.motions, state.activeMotionId]
   );
 
+  const allowedChoices = activeMotion?.allowedChoices || ["AGREE", "DISAGREE", "ABSTAIN"];
+
   const castVote = (choice: VoteChoice) => {
-    if (!socket || !activeMotion) return;
+    if (!socket || !activeMotion || !authToken) return;
     socket.emit("vote:cast", {
-      motionId: activeMotion.id,
-      choice,
-      authToken,
-      schoolId: schoolId ? Number(schoolId) : undefined,
-      voter,
+      motionId: activeMotion.id, choice, authToken,
+      schoolId: schoolId ? Number(schoolId) : undefined, voter,
     });
     setVoted(choice);
   };
@@ -132,6 +141,7 @@ export default function VotePage() {
   const currentSchool = state.schools.find((s) => s.id === schoolId);
   const schoolName = currentSchool?.name;
   const schoolLogo = currentSchool?.logoUrl?.replace(/^http:\/\//i, "https://");
+  const isLoggedIn = !!authToken && !!schoolId;
 
   return (
     <div className="animate-fade-in max-w-2xl mx-auto px-4 py-8">
@@ -140,15 +150,11 @@ export default function VotePage() {
         <h2 className="text-2xl font-extrabold text-royal-900 flex items-center justify-center gap-2">
           <VoteIcon size={24} /> ลงมติ
         </h2>
-        <div className="ornament-divider max-w-xs mx-auto mt-2">
-          <div className="diamond" />
-        </div>
+        <div className="ornament-divider max-w-xs mx-auto mt-2"><div className="diamond" /></div>
         {schoolName && (
           <div className="mt-4 flex flex-col items-center gap-2">
             {schoolLogo && <img src={schoolLogo} alt={schoolName} className="school-avatar-lg" />}
-            <span className="badge-gold text-sm flex items-center gap-1.5 w-fit">
-              <School size={13} /> {schoolName}
-            </span>
+            <span className="badge-gold text-sm flex items-center gap-1.5 w-fit"><School size={13} /> {schoolName}</span>
             {voter && <span className="text-xs text-royal-400">ลงชื่อเข้าเป็น: {voter}</span>}
           </div>
         )}
@@ -159,19 +165,23 @@ export default function VotePage() {
         <div className="card-royal mb-6 border-red-300 bg-red-50">
           <div className="flex items-center gap-3 text-red-700">
             <AlertTriangle size={20} />
-            <div>
-              <div className="font-semibold">ถูกบังคับออกจากระบบ</div>
-              <div className="text-sm">{kicked}</div>
-            </div>
+            <div><div className="font-semibold">ถูกบังคับออกจากระบบ</div><div className="text-sm">{kicked}</div></div>
           </div>
         </div>
       )}
 
       {/* Login section */}
-      {!schoolId && (
+      {!isLoggedIn && (
         <div className="card-royal mb-6">
-          <h3 className="section-title mb-4"><LogIn size={16} className="text-gold-600" /> เข้าสู่ระบบ</h3>
-
+          <h3 className="section-title mb-4"><LogIn size={16} className="text-gold-600" /> เข้าสู่ระบบเพื่อลงมติ</h3>
+          {geoStatus === "getting" && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-700 text-center mb-4">กำลังตรวจสอบตำแหน่งที่ตั้ง...</div>
+          )}
+          {geoStatus === "denied" && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-700 text-center mb-4">
+              ⚠️ ไม่สามารถเข้าถึงตำแหน่งได้ กรุณาอนุญาตการเข้าถึงตำแหน่งในเบราว์เซอร์
+            </div>
+          )}
           <div className="flex border-b border-gold/20 mb-5">
             <button className={`flex-1 py-3 text-sm font-semibold flex items-center justify-center gap-1.5 border-b-2 transition-colors ${loginTab === "qr" ? "border-gold-500 text-gold-700" : "border-transparent text-royal-400 hover:text-royal-600"}`} onClick={() => setLoginTab("qr")}>
               <QrCode size={15} /> สแกน QR Code
@@ -183,9 +193,7 @@ export default function VotePage() {
 
           {loginTab === "qr" ? (
             <div className="text-center py-6">
-              <div className="w-16 h-16 rounded-full bg-gold/10 flex items-center justify-center mx-auto mb-4">
-                <QrCode size={32} className="text-gold-600" />
-              </div>
+              <div className="w-16 h-16 rounded-full bg-gold/10 flex items-center justify-center mx-auto mb-4"><QrCode size={32} className="text-gold-600" /></div>
               <p className="text-base font-semibold text-royal-700 mb-2">สแกน QR Code เพื่อเข้าสู่ระบบ</p>
               <p className="text-sm text-royal-400 mb-2">ใช้กล้องมือถือสแกน QR Code ที่ได้รับจากผู้ดูแลระบบ</p>
               <p className="text-xs text-royal-300">ระบบจะเข้าสู่หน้าลงมติโดยอัตโนมัติ</p>
@@ -211,10 +219,19 @@ export default function VotePage() {
         </div>
       )}
 
-      {/* Voting Section */}
+      {/* Voting Section — must be logged in */}
       <div className="card-royal">
         <h3 className="section-title mb-4"><ClipboardList size={16} className="text-gold-600" /> ลงมติ</h3>
-        {activeMotion ? (
+
+        {!isLoggedIn ? (
+          <div className="text-center py-10">
+            <div className="w-16 h-16 rounded-full bg-cream-100 flex items-center justify-center mx-auto mb-4">
+              <Lock size={36} className="text-royal-300" />
+            </div>
+            <div className="text-royal-400 font-medium text-lg">กรุณาเข้าสู่ระบบก่อนลงมติ</div>
+            <p className="text-sm text-royal-300 mt-1">สแกน QR Code หรือใช้ชื่อผู้ใช้/รหัสผ่านด้านบน</p>
+          </div>
+        ) : activeMotion ? (
           <div className="space-y-5">
             <div className="bg-gradient-to-br from-cream-50 to-cream-100 border border-gold/20 rounded-xl p-6 text-center">
               <div className="text-xl font-extrabold text-royal-900 mb-2">{activeMotion.title}</div>
@@ -229,20 +246,26 @@ export default function VotePage() {
                   </div>
                   <div className="text-xl font-bold text-green-700 mb-1">ลงมติเรียบร้อยแล้ว</div>
                   <div className="text-sm text-royal-400 mt-1">
-                    คุณเลือก: <span className="font-semibold">{voted === "AGREE" ? "เห็นด้วย" : voted === "DISAGREE" ? "ไม่เห็นด้วย" : "งดออกเสียง"}</span>
+                    คุณเลือก: <span className="font-semibold">{CHOICE_META[voted]?.label || voted}</span>
                   </div>
+                  <button
+                    className="mt-6 text-xs text-royal-400 hover:text-gold-600 underline flex items-center gap-1 mx-auto transition-colors"
+                    onClick={() => setVoted(null)}
+                  >
+                    <Edit3 size={12} /> ต้องการแก้ไขผลการโหวต?
+                  </button>
                 </div>
               ) : (
                 <div className="grid gap-3">
-                  <button className="vote-btn vote-btn-agree text-white px-6 py-5 rounded-xl font-bold text-lg flex items-center justify-center gap-3" onClick={() => castVote("AGREE")}>
-                    <ThumbsUp size={24} /> เห็นด้วย
-                  </button>
-                  <button className="vote-btn vote-btn-disagree text-white px-6 py-5 rounded-xl font-bold text-lg flex items-center justify-center gap-3" onClick={() => castVote("DISAGREE")}>
-                    <ThumbsDown size={24} /> ไม่เห็นด้วย
-                  </button>
-                  <button className="vote-btn vote-btn-abstain text-white px-6 py-5 rounded-xl font-bold text-lg flex items-center justify-center gap-3" onClick={() => castVote("ABSTAIN")}>
-                    <Hand size={24} /> งดออกเสียง
-                  </button>
+                  {allowedChoices.map((choice) => {
+                    const meta = CHOICE_META[choice];
+                    if (!meta) return null;
+                    return (
+                      <button key={choice} className={`${meta.btnClass} text-white px-6 py-5 rounded-xl font-bold text-lg flex items-center justify-center gap-3`} onClick={() => castVote(choice as VoteChoice)}>
+                        <meta.Icon size={24} /> {meta.label}
+                      </button>
+                    );
+                  })}
                 </div>
               )
             ) : (

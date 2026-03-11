@@ -71,10 +71,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           data: { username: null, passwordHash: null, loginQrToken: null },
         });
       } else {
-        // Reset school credentials including session fields
+        // Reset school credentials, session fields, and invalidate QR token
+        const newDummyToken = require("crypto").randomBytes(48).toString("hex");
         await prisma.$executeRaw`
           UPDATE "School" 
-          SET username = NULL, "passwordHash" = NULL, "sessionToken" = NULL, "loginIp" = NULL 
+          SET username = NULL, "passwordHash" = NULL, "sessionToken" = NULL, "loginIp" = NULL, "loginToken" = ${newDummyToken}
           WHERE id = ${Number(id)}
         `;
       }

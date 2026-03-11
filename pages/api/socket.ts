@@ -4,27 +4,33 @@ import { Server } from "socket.io";
 import prisma from "../../lib/prisma";
 import { verifyAuthToken, type AuthPayload } from "../../lib/auth";
 
+// noinspection JSUnusedGlobalSymbols — consumed by Next.js API route runtime
 export const config = { api: { bodyParser: false } };
 
-type VoteChoice = "AGREE" | "DISAGREE" | "ABSTAIN";
+type VoteChoice = "AGREE" | "DISAGREE" | "ABSTAIN" | "ACKNOWLEDGE" | "RESOLUTION";
 type SchoolDto = { id: number; name: string; loginToken?: string; logoUrl?: string };
-type MotionDto = { id: number; title: string; description: string; isActive: boolean };
+type MotionDto = { id: number; title: string; description: string; isActive: boolean; allowedChoices?: string[] };
+type VoteDetailItem = { schoolName: string; userName: string; choice: string };
 
 type State = {
   motions: MotionDto[];
-  votes: Record<number, Record<VoteChoice, number>>;
+  votes: Record<number, Record<string, number>>;
+  voteDetails: Record<number, VoteDetailItem[]>;
   attendance: Record<number, boolean>;
   bigScreenMessage: string;
   votingOpen: boolean;
   activeMotionId: number | null;
   countdownEnd: number | null;
   schools: SchoolDto[];
-  auditLogs: { action: string; detail?: string; at: number }[];
+  auditLogs: { action: string; detail?: string; ip?: string; at: number }[];
   onlineSchools: number[];
 };
 
 // In-memory online tracking
 const onlineSockets = new Map<string, { schoolId: number; sessionToken: string }>();
+
+// Countdown auto-close timer
+let countdownTimer: ReturnType<typeof setTimeout> | null = null;
 
 function getOnlineSchoolIds(): number[] {
   const ids = new Set<number>();
@@ -32,38 +38,58 @@ function getOnlineSchoolIds(): number[] {
   return Array.from(ids);
 }
 
+function getSocketIp(socket: any): string {
+  try {
+    const forwarded = socket.handshake?.headers?.["x-forwarded-for"];
+    if (typeof forwarded === "string") return forwarded.split(",")[0].trim();
+    return socket.handshake?.address || "unknown";
+  } catch { return "unknown"; }
+}
+
+
 const buildState = async (): Promise<State> => {
-  const [control, schools, motions, voteAgg, attendance, auditLogs] = await Promise.all([
+  const [control, schools, motions, voteAgg, voteDetails, attendance, auditLogs] = await Promise.all([
     prisma.controlState.upsert({ where: { id: 1 }, update: {}, create: {} }),
     prisma.school.findMany({ orderBy: { id: "asc" }, select: { id: true, name: true, loginToken: true, logoUrl: true } }),
     prisma.motion.findMany({ orderBy: { createdAt: "asc" } }),
     prisma.vote.groupBy({ by: ["motionId", "choice"], _count: { _all: true } }),
+    prisma.vote.findMany({ include: { user: true, school: true }, orderBy: { createdAt: "asc" } }),
     prisma.attendance.findMany({ where: { checkedIn: true }, select: { schoolId: true } }),
-    prisma.auditLog.findMany({ orderBy: { timestamp: "desc" }, take: 50 }),
+    prisma.auditLog.findMany({ orderBy: { timestamp: "desc" }, take: 100 }),
   ]);
 
   const votes: State["votes"] = {};
   voteAgg.forEach((row) => {
     const m = row.motionId;
-    votes[m] = votes[m] || { AGREE: 0, DISAGREE: 0, ABSTAIN: 0 };
-    votes[m][row.choice as VoteChoice] = row._count._all;
+    if (!votes[m]) votes[m] = {};
+    votes[m][row.choice] = row._count._all;
+  });
+
+  // Build vote details per motion
+  const voteDetailsMap: State["voteDetails"] = {};
+  voteDetails.forEach((v) => {
+    if (!voteDetailsMap[v.motionId]) voteDetailsMap[v.motionId] = [];
+    voteDetailsMap[v.motionId].push({ schoolName: v.school.name, userName: v.user.name, choice: v.choice });
   });
 
   const attendanceMap: Record<number, boolean> = {};
-  attendance.forEach((a) => {
-    attendanceMap[a.schoolId] = true;
-  });
+  attendance.forEach((a) => { attendanceMap[a.schoolId] = true; });
 
   return {
-    motions: motions.map((m) => ({ id: m.id, title: m.title, description: m.description, isActive: m.isActive })),
+    motions: motions.map((m) => {
+      let allowedChoices: string[] | undefined;
+      try { allowedChoices = m.allowedChoices ? JSON.parse(m.allowedChoices) : undefined; } catch { allowedChoices = undefined; }
+      return { id: m.id, title: m.title, description: m.description, isActive: m.isActive, allowedChoices };
+    }),
     votes,
+    voteDetails: voteDetailsMap,
     attendance: attendanceMap,
     bigScreenMessage: control.bigScreenMessage,
     votingOpen: control.votingOpen,
     activeMotionId: control.activeMotionId,
     countdownEnd: control.countdownEnd ? control.countdownEnd.getTime() : null,
     schools: schools.map((s) => ({ id: s.id, name: s.name, loginToken: s.loginToken, logoUrl: s.logoUrl || undefined })),
-    auditLogs: auditLogs.map((a) => ({ action: a.action, detail: a.details || undefined, at: a.timestamp.getTime() })),
+    auditLogs: auditLogs.map((a: any) => ({ action: a.action, detail: a.details || undefined, ip: a.ipAddress || undefined, at: a.timestamp.getTime() })),
     onlineSchools: getOnlineSchoolIds(),
   };
 };
@@ -77,9 +103,9 @@ const broadcast = async (io: Server) => {
   }
 };
 
-const addAudit = async (userId: number | null, action: string, details?: string) => {
+const addAudit = async (userId: number | null, action: string, details?: string, ipAddress?: string) => {
   try {
-    await prisma.auditLog.create({ data: { userId: userId || 1, action, details } });
+    await prisma.auditLog.create({ data: { userId: userId || 1, action, details, ipAddress } });
   } catch (err) {
     console.error("audit log error:", err);
   }
@@ -92,7 +118,6 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     const io = new Server((res.socket as any).server, {
       path: "/api/socket",
       addTrailingSlash: false,
-      // Use polling only for reliability behind reverse proxies (Coolify/Traefik)
       transports: ["polling"],
       cors: { origin: "*", methods: ["GET", "POST"] },
       cookie: false,
@@ -107,18 +132,17 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
         console.error("initial state error:", err);
       }
 
+      const socketIp = getSocketIp(socket);
+
       // Client identifies itself after login
       socket.on("auth:identify", async (payload: { schoolId: number; sessionToken: string }) => {
         if (!payload.schoolId || !payload.sessionToken) return;
-
-        // Verify session token against DB
         try {
           const school: any = await prisma.school.findUnique({ where: { id: payload.schoolId } });
           if (!school || school.sessionToken !== payload.sessionToken) {
             socket.emit("session:invalid", { reason: "มีการเข้าสู่ระบบจากเครื่องอื่น" });
             return;
           }
-
           // Kick other sockets with same schoolId but different sessionToken
           onlineSockets.forEach((info, sid) => {
             if (info.schoolId === payload.schoolId && sid !== socket.id) {
@@ -130,7 +154,6 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
               onlineSockets.delete(sid);
             }
           });
-
           onlineSockets.set(socket.id, { schoolId: payload.schoolId, sessionToken: payload.sessionToken });
           await broadcast(io);
         } catch (err) {
@@ -146,20 +169,33 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
         }
       });
 
-      socket.on("admin:add-motion", async (payload: { title: string; description: string; userId?: number }) => {
+      socket.on("admin:add-motion", async (payload: { title: string; description: string; allowedChoices?: string[]; userId?: number }) => {
         try {
-          const motion = await prisma.motion.create({ data: { title: payload.title, description: payload.description } });
-          await addAudit(payload.userId || null, "add-motion", motion.title);
+          const choices = payload.allowedChoices && payload.allowedChoices.length > 0 ? JSON.stringify(payload.allowedChoices) : null;
+          const motion = await prisma.motion.create({ data: { title: payload.title, description: payload.description, allowedChoices: choices } });
+          await addAudit(payload.userId || null, "เพิ่มญัตติ", motion.title, socketIp);
           await broadcast(io);
         } catch (err) {
           console.error("add-motion error:", err);
         }
       });
 
+      socket.on("admin:delete-motion", async (payload: { motionId: number }) => {
+        try {
+          await prisma.vote.deleteMany({ where: { motionId: payload.motionId } });
+          await prisma.auditLog.deleteMany({ where: { motionId: payload.motionId } });
+          await prisma.motion.delete({ where: { id: payload.motionId } });
+          await addAudit(null, "ลบญัตติ", `id: ${payload.motionId}`, socketIp);
+          await broadcast(io);
+        } catch (err) {
+          console.error("delete-motion error:", err);
+        }
+      });
+
       socket.on("admin:screen-control", async (data: { message: string; userId?: number }) => {
         try {
           await prisma.controlState.upsert({ where: { id: 1 }, update: { bigScreenMessage: data.message }, create: { bigScreenMessage: data.message } });
-          await addAudit(data.userId || null, "screen-message", data.message);
+          await addAudit(data.userId || null, "อัปเดตข้อความจอ", data.message, socketIp);
           io.emit("bigscreen:update", { message: data.message });
           await broadcast(io);
         } catch (err) {
@@ -178,7 +214,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
             await prisma.motion.updateMany({ data: { isActive: false } });
             await prisma.motion.update({ where: { id: data.motionId }, data: { isActive: data.open } });
           }
-          await addAudit(data.userId || null, data.open ? "vote-open" : "vote-close", `motion: ${data.motionId}`);
+          await addAudit(data.userId || null, data.open ? "เปิดรับโหวต" : "ปิดรับโหวต", `ญัตติ: ${data.motionId}`, socketIp);
           await broadcast(io);
         } catch (err) {
           console.error("toggle-vote error:", err);
@@ -189,7 +225,20 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
         try {
           const end = new Date(Date.now() + data.seconds * 1000);
           await prisma.controlState.upsert({ where: { id: 1 }, update: { countdownEnd: end }, create: { countdownEnd: end } });
-          await addAudit(data.userId || null, "countdown", `${data.seconds}s`);
+          await addAudit(data.userId || null, "ตั้งเวลา", `${data.seconds} วินาที`, socketIp);
+
+          // Auto-close voting when countdown ends
+          if (countdownTimer) clearTimeout(countdownTimer);
+          countdownTimer = setTimeout(async () => {
+            try {
+              await prisma.controlState.update({ where: { id: 1 }, data: { votingOpen: false, countdownEnd: null } });
+              await addAudit(null, "ปิดรับโหวตอัตโนมัติ", "หมดเวลา");
+              await broadcast(io);
+            } catch (err) {
+              console.error("auto-close error:", err);
+            }
+          }, data.seconds * 1000);
+
           await broadcast(io);
         } catch (err) {
           console.error("set-countdown error:", err);
@@ -206,7 +255,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
             update: { checkedIn: true, checkedInAt: new Date() },
             create: { schoolId: school.id, userId: user.id, checkedIn: true, checkedInAt: new Date() },
           });
-          await addAudit(payload.userId || null, "attendance", school.name);
+          await addAudit(payload.userId || null, "เช็คชื่อ", school.name, socketIp);
           await broadcast(io);
         } catch (err) {
           console.error("check-in error:", err);
@@ -230,6 +279,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
               onlineSockets.delete(sid);
             }
           });
+          await addAudit(null, "บังคับออก", `schoolId: ${payload.schoolId}`, socketIp);
           await broadcast(io);
         } catch (err) {
           console.error("kick-session error:", err);
@@ -242,6 +292,16 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
           try {
             const control = await prisma.controlState.findUnique({ where: { id: 1 } });
             if (!control?.votingOpen || control.activeMotionId !== payload.motionId) return;
+
+            // Validate allowed choices for this motion
+            const motion = await prisma.motion.findUnique({ where: { id: payload.motionId } });
+            if (!motion) return;
+            if (motion.allowedChoices) {
+              try {
+                const allowed: string[] = JSON.parse(motion.allowedChoices);
+                if (!allowed.includes(payload.choice)) return;
+              } catch {}
+            }
 
             let auth: AuthPayload | null = null;
             if (payload.authToken) auth = await verifyAuthToken(payload.authToken);
@@ -269,7 +329,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
               update: { choice: payload.choice },
               create: { userId, motionId: payload.motionId, schoolId: school.id, choice: payload.choice },
             });
-            await addAudit(userId, "vote", `${school.name} -> ${payload.choice}`);
+            await addAudit(userId, "ลงมติ", `${school.name} → ${payload.choice}`, socketIp);
             await broadcast(io);
           } catch (err) {
             console.error("vote:cast error:", err);

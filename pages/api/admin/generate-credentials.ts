@@ -34,7 +34,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const password = generatePassword();
         const hash = await bcrypt.hash(password, 10);
         // Also regenerate loginToken for QR code
-        const loginToken = randomBytes(12).toString("hex");
+        const loginToken = randomBytes(48).toString("hex");
         await prisma.school.update({
           where: { id: school.id },
           data: { username, passwordHash: hash, loginToken },

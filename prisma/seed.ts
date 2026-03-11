@@ -10,11 +10,11 @@ const schoolData = [
   },
   {
     name: "โรงเรียนเตรียมอุดมศึกษาน้อมเกล้า",
-    logoUrl: null,
+    logoUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Phra_Kiao_Triamnom_Colored.png/960px-Phra_Kiao_Triamnom_Colored.png",
   },
   {
     name: "โรงเรียนเทพศิรินทร์ร่มเกล้า",
-    logoUrl: null,
+    logoUrl: "https://dsr.ac.th/wp-content/uploads/2017/11/DSRvector-768x826.png",
   },
   {
     name: "โรงเรียนนวมินทราชินูทิศ เตรียมอุดมศึกษาน้อมเกล้า",
@@ -26,7 +26,7 @@ const schoolData = [
   },
   {
     name: "โรงเรียนมัธยมวัดหนองจอก",
-    logoUrl: null,
+    logoUrl: "https://tesf.or.th/esportswhatschooltour2024/images/schoollogo/nj.png",
   },
   {
     name: "โรงเรียนรัตนโกสินทร์สมโภชลาดกระบัง",
@@ -51,7 +51,7 @@ async function main() {
   });
 
   for (const data of schoolData) {
-    const loginToken = randomBytes(12).toString("hex");
+    const loginToken = randomBytes(48).toString("hex");
     const qrCode = `QR-${data.name}`;
     const school = await prisma.school.upsert({
       where: { name: data.name },

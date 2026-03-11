@@ -2,15 +2,13 @@
 const nextConfig = {
   reactStrictMode: true,
   output: "standalone",
-  swcMinify: true,
   compress: true,
-  transpilePackages: ["lucide-react"],
-  modularizeImports: {
-    "lucide-react": {
-      transform: "lucide-react/dist/esm/icons/{{ kebabCase member }}",
-    },
+  images: {
+    unoptimized: true,
   },
+  transpilePackages: ["lucide-react"],
   experimental: {
+    optimizePackageImports: ["lucide-react"],
     outputFileTracingIncludes: {
       "/api/**": [
         "./node_modules/.prisma/**/*",

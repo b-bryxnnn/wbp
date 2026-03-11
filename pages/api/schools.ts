@@ -8,7 +8,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     const schools = await prisma.school.findMany({
       orderBy: { id: "asc" },
-      select: { id: true, name: true, loginToken: true, logoUrl: true },
+      select: { id: true, name: true, loginToken: true, logoUrl: true, username: true },
     });
     res.status(200).json({ schools });
   } catch (err: any) {

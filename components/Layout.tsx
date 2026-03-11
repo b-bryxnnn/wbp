@@ -2,7 +2,7 @@ import React from "react";
 import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { Landmark, Vote } from "lucide-react";
+import { Vote } from "lucide-react";
 import { Sarabun, Prompt } from "next/font/google";
 
 const sarabun = Sarabun({
@@ -19,8 +19,10 @@ const prompt = Prompt({
   variable: "--font-prompt",
 });
 
+const HOST_LOGO = "https://upload.wikimedia.org/wikipedia/commons/9/9f/RSL001.png";
+
 const navItems = [
-  { href: "/", label: "หน้าหลัก", icon: Landmark },
+  { href: "/", label: "หน้าหลัก" },
   { href: "/vote", label: "ลงมติ", icon: Vote },
 ];
 
@@ -43,7 +45,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <>
       <Head>
-        <title>ระบบโหวตลงมติ — สหวิทยาเขตวชิรบูรพา</title>
+        <title>สภานักเรียน — สหวิทยาเขตวชิรบูรพา</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link
           rel="icon"
@@ -59,11 +61,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <header className="bg-white/90 backdrop-blur-md border-b border-gold/15 sticky top-0 z-50">
           <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
             <Link href="/" className="flex items-center gap-3 no-underline group">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gold-400 to-gold-600 flex items-center justify-center text-white shadow-sm group-hover:shadow-gold transition-shadow">
-                <Landmark size={20} />
-              </div>
+              <img
+                src={HOST_LOGO}
+                alt="ตราสัญลักษณ์"
+                className="w-10 h-10 object-contain group-hover:scale-105 transition-transform"
+              />
               <div>
-                <div className="text-sm font-bold text-royal-800 leading-tight">ระบบโหวตลงมติ</div>
+                <div className="text-sm font-bold text-royal-800 leading-tight">สภานักเรียน</div>
                 <div className="text-xs text-royal-400 leading-tight">สหวิทยาเขตวชิรบูรพา</div>
               </div>
             </Link>
@@ -82,7 +86,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                         : "text-royal-500 hover:bg-gold/5 hover:text-gold-700"
                     }`}
                   >
-                    <Icon size={15} />
+                    {Icon && <Icon size={15} />}
                     <span className="hidden sm:inline">{item.label}</span>
                   </Link>
                 );
