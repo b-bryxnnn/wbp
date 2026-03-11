@@ -10,7 +10,8 @@ services:
       - JWT_SECRET=${JWT_SECRET:-super-secret-local-key}
       - SOCKET_IO_PATH=/api/socket
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     restart: unless-stopped
 
   db:
@@ -25,6 +26,11 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wbp_user -d wbp_db"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
 
   adminer:
     image: adminer
