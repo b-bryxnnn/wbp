@@ -16,6 +16,7 @@ build/
 # Misc
 .DS_Store
 *.pem
+tsconfig.tsbuildinfo
 
 # Debug
 npm-debug.log*
