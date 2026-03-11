@@ -4,9 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build && npm run copy-static",
+    "build": "prisma generate && next build && npm run copy-static && npm run compile-seed",
     "copy-static": "node -e \"const fs=require('fs');function c(s,d){fs.mkdirSync(d,{recursive:true});fs.readdirSync(s,{withFileTypes:true}).forEach(e=>{const sp=s+'/'+e.name,dp=d+'/'+e.name;e.isDirectory()?c(sp,dp):fs.copyFileSync(sp,dp)})};c('.next/static','.next/standalone/.next/static');console.log('Copied .next/static to standalone')\"",
-    "start": "node .next/standalone/server.js",
+    "compile-seed": "node -e \"const ts=require('typescript'),fs=require('fs');const s=fs.readFileSync('prisma/seed.ts','utf8');const r=ts.transpileModule(s,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2017,esModuleInterop:true}});fs.writeFileSync('prisma/seed.js',r.outputText);console.log('Compiled seed.ts -> seed.js')\"",
+    "start": "node start-production.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev --name init",
     "prisma:seed": "ts-node prisma/seed.ts"
