@@ -120,5 +120,6 @@ model ControlState {
   countdownEnd      DateTime?
   loginMode         LoginMode @default(PER_SCHOOL)
   adminPasswordHash String?
+  geoCheckEnabled   Boolean   @default(true)
   updatedAt         DateTime  @updatedAt
 }

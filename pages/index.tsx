@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Landmark, Vote, Calendar, MapPin, Shield, Users } from "lucide-react";
+import { Landmark, Vote, Calendar, MapPin, Shield, Users, Sparkles } from "lucide-react";
 
 const schoolLogos = [
 	{ name: "โรงเรียนเตรียมอุดมศึกษาพัฒนาการ สุวรรณภูมิ", url: "https://upload.wikimedia.org/wikipedia/commons/4/47/Phra_Kiao_Triamnom_Colored.png" },
@@ -19,62 +19,72 @@ export default function Home() {
 	return (
 		<div className="animate-fade-in">
 			{/* Hero Section */}
-			<section className="hero-gradient py-16 md:py-24 relative overflow-hidden">
-				{/* Subtle watermark */}
+			<section className="hero-gradient py-20 md:py-28 relative overflow-hidden">
+				{/* Decorative elements */}
 				<div className="absolute inset-0 flex items-center justify-center opacity-[0.03] pointer-events-none">
-					<img src={HOST_LOGO} alt="" className="w-[400px] h-[400px] object-contain" />
+					<img src={HOST_LOGO} alt="" className="w-[500px] h-[500px] object-contain" />
 				</div>
+				<div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-gold to-transparent" />
+
 				<div className="max-w-4xl mx-auto px-4 text-center relative">
 					{/* Emblem */}
-					<div className="mx-auto mb-6">
-						<img src={HOST_LOGO} alt="ตราสัญลักษณ์" className="w-24 h-24 md:w-28 md:h-28 object-contain mx-auto drop-shadow-lg" />
+					<div className="mx-auto mb-8">
+						<div className="w-28 h-28 md:w-32 md:h-32 rounded-full bg-white shadow-xl border-4 border-gold/20 flex items-center justify-center mx-auto">
+							<img src={HOST_LOGO} alt="ตราสัญลักษณ์" className="w-20 h-20 md:w-24 md:h-24 object-contain" />
+						</div>
 					</div>
 
-					<h1 className="text-3xl md:text-5xl font-extrabold text-royal-900 mb-3 leading-tight">
-						สภานักเรียน
-					</h1>
-					<h2 className="text-lg md:text-2xl font-semibold text-gold-600 mb-1">
-						สหวิทยาเขตวชิรบูรพา
-					</h2>
+					<div className="space-y-2 mb-4">
+						<p className="text-gold-600 text-sm md:text-base font-semibold tracking-widest uppercase flex items-center justify-center gap-2">
+							<Sparkles size={14} /> ยินดีต้อนรับ <Sparkles size={14} />
+						</p>
+						<h1 className="text-3xl md:text-5xl font-extrabold text-royal-900 leading-tight">
+							ยินดีต้อนรับสภานักเรียน
+						</h1>
+						<h2 className="text-xl md:text-3xl font-bold text-gold-600">
+							โรงเรียนในเครือสหวิทยาเขตวชิรบูรพา
+						</h2>
+					</div>
 
 					<div className="ornament-divider max-w-xs mx-auto my-6">
 						<div className="diamond" />
 					</div>
 
-					<p className="text-royal-600 text-base md:text-lg max-w-2xl mx-auto mb-1 leading-relaxed">
+					<p className="text-royal-600 text-base md:text-lg max-w-2xl mx-auto mb-1 leading-relaxed font-medium">
 						อบรมโครงการส่งเสริมภาวะผู้นำและศักยภาพสภานักเรียน
 					</p>
 					<p className="text-royal-400 text-sm md:text-base mb-10">
-						โรงเรียนในสหวิทยาเขตวชิรบูรพา สำนักงานเขตพื้นที่การศึกษามัธยมศึกษากรุงเทพมหานคร เขต 2
+						สำนักงานเขตพื้นที่การศึกษามัธยมศึกษากรุงเทพมหานคร เขต 2
 					</p>
 
 					{/* CTA Buttons */}
 					<div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-						<Link href="/vote" className="btn-gold text-base px-8 py-3.5 flex items-center gap-2 text-lg">
-							<Vote size={20} /> เข้าสู่หน้าลงมติ
+						<Link href="/vote" className="btn-gold text-base px-10 py-4 flex items-center gap-2 text-lg shadow-lg hover:shadow-xl">
+							<Vote size={22} /> เข้าสู่หน้าลงมติ
 						</Link>
 					</div>
 				</div>
 			</section>
 
 			{/* School Logos Showcase */}
-			<section className="py-10 border-y border-gold/10 bg-white/50">
+			<section className="py-12 border-y border-gold/10 bg-white/50">
 				<div className="max-w-5xl mx-auto px-4">
-					<p className="text-center text-sm font-semibold text-royal-400 mb-6 flex items-center justify-center gap-2">
-						<Users size={15} /> โรงเรียนในสหวิทยาเขตวชิรบูรพาที่เข้าร่วม
+					<p className="text-center text-sm font-bold text-royal-500 mb-8 flex items-center justify-center gap-2">
+						<Users size={16} /> โรงเรียนในสหวิทยาเขตวชิรบูรพาที่เข้าร่วม
 					</p>
-					{/* Use flex-wrap with justify-center so incomplete last row is centered */}
-					<div className="flex flex-wrap justify-center gap-5 md:gap-8">
+					<div className="flex flex-wrap justify-center gap-6 md:gap-10">
 						{schoolLogos.map((s, i) => (
-							<div key={i} className="flex flex-col items-center gap-2.5 text-center" style={{ width: "clamp(90px, 18%, 140px)" }}>
+							<div key={i} className="flex flex-col items-center gap-3 text-center group" style={{ width: "clamp(90px, 18%, 130px)" }}>
 								{s.url ? (
-									<img src={s.url} alt={s.name} loading="lazy" className="school-avatar-lg" />
+									<div className="w-16 h-16 rounded-full border-2 border-gold/20 bg-white p-1.5 shadow-sm group-hover:shadow-md group-hover:border-gold/40 transition-all">
+										<img src={s.url} alt={s.name} loading="lazy" className="w-full h-full object-contain rounded-full" />
+									</div>
 								) : (
-									<div className="w-14 h-14 rounded-full bg-gold/10 flex items-center justify-center">
-										<Landmark size={20} className="text-gold-500" />
+									<div className="w-16 h-16 rounded-full bg-gold/10 flex items-center justify-center">
+										<Landmark size={24} className="text-gold-500" />
 									</div>
 								)}
-								<span className="text-[11px] text-royal-500 leading-tight">{s.name}</span>
+								<span className="text-[11px] text-royal-500 leading-tight font-medium">{s.name}</span>
 							</div>
 						))}
 					</div>
@@ -82,16 +92,20 @@ export default function Home() {
 			</section>
 
 			{/* Info Banner */}
-			<section className="max-w-4xl mx-auto px-4 py-14">
-				<div className="card-royal text-center py-8 relative overflow-hidden">
+			<section className="max-w-4xl mx-auto px-4 py-16">
+				<div className="card-royal text-center py-10 relative overflow-hidden">
 					<div className="absolute inset-0 bg-gradient-to-r from-gold/5 via-transparent to-gold/5 pointer-events-none" />
+					<div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-gold/50 to-transparent" />
 					<div className="relative">
-						<Shield size={24} className="mx-auto text-gold-500 mb-3" />
-						<p className="text-royal-700 font-bold text-lg flex items-center justify-center gap-2">
-							<Calendar size={18} /> วันพฤหัสบดี ที่ 12 มีนาคม 2569
+						<Shield size={28} className="mx-auto text-gold-500 mb-4" />
+						<p className="text-royal-700 font-bold text-xl flex items-center justify-center gap-2">
+							<Calendar size={20} /> วันพฤหัสบดี ที่ 12 มีนาคม 2569
 						</p>
-						<p className="text-royal-400 text-sm flex items-center justify-center gap-2 mt-2">
-							<MapPin size={15} /> ณ โรงเรียนรัตนโกสินทร์สมโภชลาดกระบัง
+						<p className="text-royal-400 text-base flex items-center justify-center gap-2 mt-3">
+							<MapPin size={16} /> ณ โรงเรียนรัตนโกสินทร์สมโภชลาดกระบัง
+						</p>
+						<p className="text-royal-300 text-xs mt-4">
+							121 ถ. เคหะร่มเกล้า แขวงคลองสองต้นนุ่น เขตลาดกระบัง กรุงเทพมหานคร 10520
 						</p>
 					</div>
 				</div>

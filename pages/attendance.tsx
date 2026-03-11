@@ -21,7 +21,9 @@ export default function OnlineStatus() {
         onlineSchools: data.onlineSchools || [],
       });
     });
-    return () => { s.disconnect(); };
+    // Send heartbeat every 10 seconds for online tracking
+    const heartbeat = setInterval(() => s.emit("client:heartbeat"), 10000);
+    return () => { clearInterval(heartbeat); s.disconnect(); };
   }, []);
 
   const total = state.schools.length;

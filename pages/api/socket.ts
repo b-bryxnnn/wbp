@@ -26,15 +26,21 @@ type State = {
   onlineSchools: number[];
 };
 
-// In-memory online tracking
-const onlineSockets = new Map<string, { schoolId: number; sessionToken: string }>();
+// In-memory online tracking with heartbeat
+const onlineSockets = new Map<string, { schoolId: number; sessionToken: string; lastSeen: number }>();
 
 // Countdown auto-close timer
 let countdownTimer: ReturnType<typeof setTimeout> | null = null;
+// Heartbeat stale-check interval
+let heartbeatInterval: ReturnType<typeof setInterval> | null = null;
 
 function getOnlineSchoolIds(): number[] {
   const ids = new Set<number>();
-  onlineSockets.forEach((v) => ids.add(v.schoolId));
+  const now = Date.now();
+  onlineSockets.forEach((v, sid) => {
+    // Only count as online if heartbeat within last 25 seconds
+    if (now - v.lastSeen < 25000) ids.add(v.schoolId);
+  });
   return Array.from(ids);
 }
 
@@ -154,11 +160,17 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
               onlineSockets.delete(sid);
             }
           });
-          onlineSockets.set(socket.id, { schoolId: payload.schoolId, sessionToken: payload.sessionToken });
+          onlineSockets.set(socket.id, { schoolId: payload.schoolId, sessionToken: payload.sessionToken, lastSeen: Date.now() });
           await broadcast(io);
         } catch (err) {
           console.error("auth:identify error:", err);
         }
+      });
+
+      // Heartbeat — client sends every 10s to stay "online"
+      socket.on("client:heartbeat", () => {
+        const entry = onlineSockets.get(socket.id);
+        if (entry) entry.lastSeen = Date.now();
       });
 
       socket.on("disconnect", async () => {
@@ -174,9 +186,11 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
           const choices = payload.allowedChoices && payload.allowedChoices.length > 0 ? JSON.stringify(payload.allowedChoices) : null;
           const motion = await prisma.motion.create({ data: { title: payload.title, description: payload.description, allowedChoices: choices } });
           await addAudit(payload.userId || null, "เพิ่มญัตติ", motion.title, socketIp);
+          socket.emit("admin:action-result", { success: true, action: "เพิ่มญัตติสำเร็จ", detail: motion.title });
           await broadcast(io);
         } catch (err) {
           console.error("add-motion error:", err);
+          socket.emit("admin:action-result", { success: false, action: "เพิ่มญัตติไม่สำเร็จ" });
         }
       });
 
@@ -186,6 +200,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
           await prisma.auditLog.deleteMany({ where: { motionId: payload.motionId } });
           await prisma.motion.delete({ where: { id: payload.motionId } });
           await addAudit(null, "ลบญัตติ", `id: ${payload.motionId}`, socketIp);
+          socket.emit("admin:action-result", { success: true, action: "ลบญัตติสำเร็จ" });
           await broadcast(io);
         } catch (err) {
           console.error("delete-motion error:", err);
@@ -196,6 +211,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
         try {
           await prisma.controlState.upsert({ where: { id: 1 }, update: { bigScreenMessage: data.message }, create: { bigScreenMessage: data.message } });
           await addAudit(data.userId || null, "อัปเดตข้อความจอ", data.message, socketIp);
+          socket.emit("admin:action-result", { success: true, action: "อัปเดตข้อความจอสำเร็จ" });
           io.emit("bigscreen:update", { message: data.message });
           await broadcast(io);
         } catch (err) {
@@ -341,5 +357,5 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     // @ts-ignore
     (res.socket as any).server.io = io;
   }
-  res.end();
+  res.status(200).json({ ok: true });
 }

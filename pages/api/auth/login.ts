@@ -18,8 +18,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const { username, password, lat, lng } = req.body;
   if (!username || !password) return res.status(400).json({ error: "กรุณากรอกชื่อผู้ใช้และรหัสผ่าน" });
 
-  // Geolocation check
-  if (lat !== undefined && lng !== undefined) {
+  const clientIp = getClientIp(req);
+  const control = await prisma.controlState.findUnique({ where: { id: 1 } });
+  const geoCheckEnabled = control?.geoCheckEnabled ?? true;
+
+  // Geolocation check — mandatory when enabled
+  if (geoCheckEnabled) {
+    if (lat === undefined || lng === undefined) {
+      return res.status(403).json({ error: "กรุณาเปิดการเข้าถึงตำแหน่งที่ตั้งก่อนเข้าสู่ระบบ" });
+    }
     const geo = isWithinRadius(Number(lat), Number(lng));
     if (!geo.allowed) {
       return res.status(403).json({
@@ -28,8 +35,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
   }
 
-  const clientIp = getClientIp(req);
-  const control = await prisma.controlState.findUnique({ where: { id: 1 } });
   const loginMode = control?.loginMode || "PER_SCHOOL";
 
   if (loginMode === "PER_SCHOOL") {

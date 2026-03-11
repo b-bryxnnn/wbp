@@ -16,10 +16,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const token = req.query.token as string;
   if (!token) return res.status(400).json({ error: "missing token" });
 
-  // Geolocation check (optional via query params)
+  const clientIp = getClientIp(req);
+  const control = await prisma.controlState.findUnique({ where: { id: 1 } });
+  const geoCheckEnabled = control?.geoCheckEnabled ?? true;
+
+  // Geolocation check — mandatory when enabled
   const lat = req.query.lat ? Number(req.query.lat) : undefined;
   const lng = req.query.lng ? Number(req.query.lng) : undefined;
-  if (lat !== undefined && lng !== undefined) {
+  if (geoCheckEnabled) {
+    if (lat === undefined || lng === undefined) {
+      return res.status(403).json({ error: "กรุณาเปิดการเข้าถึงตำแหน่งที่ตั้งก่อนเข้าสู่ระบบ" });
+    }
     const geo = isWithinRadius(lat, lng);
     if (!geo.allowed) {
       return res.status(403).json({
@@ -28,8 +35,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
   }
 
-  const clientIp = getClientIp(req);
-  const control = await prisma.controlState.findUnique({ where: { id: 1 } });
   const loginMode = control?.loginMode || "PER_SCHOOL";
 
   if (loginMode === "PER_INDIVIDUAL") {

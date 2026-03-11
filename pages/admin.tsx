@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { io, Socket } from "socket.io-client";
 import dynamic from "next/dynamic";
 import {
@@ -7,6 +7,7 @@ import {
   ScrollText, CheckCircle, School, Key, Printer, RefreshCw,
   Lock, LogIn, ShieldCheck, KeyRound, Eye, EyeOff, LogOut, Inbox,
   Trash2, Globe, Users, Wifi, WifiOff, BookCheck, FileCheck2, ChevronDown, ChevronUp, FileDown,
+  MapPin, RotateCcw, AlertTriangle, XCircle, CheckCircle2, Navigation,
 } from "lucide-react";
 
 const QRCode = dynamic(() => import("react-qr-code"), { ssr: false });
@@ -27,6 +28,7 @@ const CHOICE_LABELS: Record<string, string> = {
 type Motion = { id: number; title: string; description: string; isActive: boolean; allowedChoices?: string[] };
 type SchoolT = { id: number; name: string; loginToken?: string; logoUrl?: string; username?: string | null };
 type VoteDetailItem = { schoolName: string; userName: string; choice: string };
+type Toast = { id: number; type: "success" | "error"; message: string };
 
 type State = {
   motions: Motion[];
@@ -75,13 +77,24 @@ export default function Admin() {
   const [countdown, setCountdown] = useState(60);
   const [schools, setSchools] = useState<SchoolT[]>([]);
   const [loginMode, setLoginMode] = useState<string>("PER_SCHOOL");
+  const [geoCheckEnabled, setGeoCheckEnabled] = useState(true);
   const [credentials, setCredentials] = useState<Credential[]>([]);
   const [generating, setGenerating] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("main");
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loadingAccounts, setLoadingAccounts] = useState(false);
   const [expandedMotion, setExpandedMotion] = useState<number | null>(null);
+  const [toasts, setToasts] = useState<Toast[]>([]);
+  const [resetting, setResetting] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
+  const toastIdRef = useRef(0);
+
+  // Toast helper
+  const showToast = useCallback((type: "success" | "error", message: string) => {
+    const id = ++toastIdRef.current;
+    setToasts((prev) => [...prev, { id, type, message }]);
+    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 4000);
+  }, []);
 
   // Check if already authenticated
   useEffect(() => {
@@ -110,6 +123,7 @@ export default function Admin() {
       const data = await res.json();
       if (!res.ok) { setChangePwError(data.error || "เปลี่ยนรหัสผ่านไม่สำเร็จ"); return; }
       setChangePwMsg("เปลี่ยนรหัสผ่านสำเร็จแล้ว"); setNewPassword(""); setConfirmPassword("");
+      showToast("success", "เปลี่ยนรหัสผ่านสำเร็จ");
     } catch { setChangePwError("เกิดข้อผิดพลาดในการเชื่อมต่อ"); } finally { setChangingPw(false); }
   };
 
@@ -119,8 +133,12 @@ export default function Admin() {
       const s = io({ path: "/api/socket", transports: ["polling"] });
       setSocket(s);
       s.on("state:update", (data: State) => setState(data));
+      // Listen for action results
+      s.on("admin:action-result", (data: { success: boolean; action: string; detail?: string }) => {
+        showToast(data.success ? "success" : "error", data.action + (data.detail ? ` — ${data.detail}` : ""));
+      });
     });
-  }, [authed]);
+  }, [authed, showToast]);
 
   useEffect(() => {
     if (!authed) return;
@@ -130,7 +148,7 @@ export default function Admin() {
       .catch((e) => console.error("Failed to load schools:", e));
     fetch("/api/admin/login-mode")
       .then((r) => { if (r.status === 401) { setAuthed(false); throw new Error("Unauthorized"); } if (!r.ok) throw new Error(r.statusText); return r.json(); })
-      .then((data) => setLoginMode(data.loginMode))
+      .then((data) => { setLoginMode(data.loginMode); setGeoCheckEnabled(data.geoCheckEnabled ?? true); })
       .catch((e) => console.error("Failed to load login-mode:", e));
   }, [authed]);
 
@@ -153,7 +171,9 @@ export default function Admin() {
       .catch(() => {});
   }, [authed, activeTab]);
 
-  const sendMessage = () => socket?.emit("admin:screen-control", { message });
+  const sendMessage = () => {
+    socket?.emit("admin:screen-control", { message });
+  };
   const addMotion = () => {
     if (!motionTitle) return;
     socket?.emit("admin:add-motion", { title: motionTitle, description: motionDescription, allowedChoices: motionChoices });
@@ -168,18 +188,46 @@ export default function Admin() {
   const changeLoginMode = async (mode: string) => {
     await fetch("/api/admin/login-mode", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ loginMode: mode }) });
     setLoginMode(mode);
+    showToast("success", `เปลี่ยนโหมดเป็น ${mode === "PER_SCHOOL" ? "รายโรงเรียน" : "รายบุคคล"}`);
+  };
+
+  const toggleGeoCheck = async () => {
+    const newVal = !geoCheckEnabled;
+    try {
+      const res = await fetch("/api/admin/login-mode", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ geoCheckEnabled: newVal }) });
+      if (res.ok) {
+        setGeoCheckEnabled(newVal);
+        showToast("success", newVal ? "เปิดระบบตรวจสอบตำแหน่ง" : "ปิดระบบตรวจสอบตำแหน่ง");
+      }
+    } catch { showToast("error", "เกิดข้อผิดพลาด"); }
+  };
+
+  const handleResetSystem = async () => {
+    if (!confirm("⚠️ ยืนยันการรีเซ็ตระบบ?\n\nจะลบข้อมูลทั้งหมด:\n- ผลการลงมติ\n- บันทึกการทำงาน\n- การเช็คชื่อ\n- ญัตติทั้งหมด\n\nข้อมูลโรงเรียนและบัญชีจะไม่ถูกลบ")) return;
+    if (!confirm("ยืนยันอีกครั้ง: คุณแน่ใจว่าต้องการรีเซ็ตข้อมูลทั้งหมด?")) return;
+    setResetting(true);
+    try {
+      const res = await fetch("/api/admin/reset", { method: "POST" });
+      const data = await res.json();
+      if (res.ok) {
+        showToast("success", "รีเซ็ตระบบสำเร็จ");
+      } else {
+        showToast("error", data.error || "รีเซ็ตไม่สำเร็จ");
+      }
+    } catch { showToast("error", "เกิดข้อผิดพลาดในการเชื่อมต่อ"); } finally { setResetting(false); }
   };
 
   const generateCredentials = async () => {
     setGenerating(true);
     try {
       const res = await fetch("/api/admin/generate-credentials", { method: "POST" });
-      if (!res.ok) { const err = await res.json().catch(() => ({ error: "เกิดข้อผิดพลาด" })); alert(err.error || "สร้างข้อมูลล็อกอินไม่สำเร็จ"); return; }
+      if (!res.ok) { const err = await res.json().catch(() => ({ error: "เกิดข้อผิดพลาด" })); showToast("error", err.error || "สร้างข้อมูลล็อกอินไม่สำเร็จ"); return; }
       const data = await res.json();
       setCredentials(data.credentials || []);
+      showToast("success", `สร้างบัญชีสำเร็จ ${(data.credentials || []).length} รายการ`);
       const schoolsRes = await fetch("/api/schools");
       if (schoolsRes.ok) { const sd = await schoolsRes.json(); setSchools(sd.schools || []); }
-    } catch (e: any) { alert("เชื่อมต่อ server ไม่ได้: " + e.message); } finally { setGenerating(false); }
+    } catch (e: any) { showToast("error", "เชื่อมต่อ server ไม่ได้: " + e.message); } finally { setGenerating(false); }
   };
 
   const deleteAccount = async (id: number, type: string) => {
@@ -187,13 +235,13 @@ export default function Admin() {
     try {
       const res = await fetch("/api/admin/accounts", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, type }) });
       if (res.ok) {
+        showToast("success", "ลบบัญชีสำเร็จ");
         await loadAccounts();
-        // Also refresh schools so QR tab is updated
         const schoolsRes = await fetch("/api/schools");
         if (schoolsRes.ok) { const sd = await schoolsRes.json(); setSchools(sd.schools || []); }
       }
-      else alert("ลบไม่สำเร็จ");
-    } catch { alert("เกิดข้อผิดพลาด"); }
+      else showToast("error", "ลบไม่สำเร็จ");
+    } catch { showToast("error", "เกิดข้อผิดพลาด"); }
   };
 
   const handlePrintCredentials = () => {
@@ -203,26 +251,33 @@ export default function Admin() {
     if (!w) return;
     w.document.write(`<!DOCTYPE html><html lang="th"><head><meta charset="utf-8"><title>ข้อมูลบัญชีเข้าสู่ระบบ</title>
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap');
   body { font-family: 'Sarabun', sans-serif; margin: 20px; color: #333; }
-  h1 { text-align: center; font-size: 18px; margin-bottom: 20px; }
+  h1 { text-align: center; font-size: 18px; margin-bottom: 20px; color: #2d2312; }
   .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
-  .card { border: 1.5px solid #c8a24e; border-radius: 8px; padding: 12px; page-break-inside: avoid; }
-  .name { font-weight: bold; font-size: 13px; margin-bottom: 6px; }
-  .cred { font-family: monospace; font-size: 11px; color: #555; }
+  .card { border: 2px solid #c8a24e; border-radius: 12px; padding: 16px; page-break-inside: avoid; background: linear-gradient(135deg, #fffdf7, #fef9e7); }
+  .card-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid rgba(200,162,78,0.3); }
+  .school-num { background: #c8a24e; color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+  .name { font-weight: 700; font-size: 13px; color: #2d2312; }
+  .cred { font-family: 'Courier New', monospace; font-size: 12px; color: #555; margin-top: 4px; }
+  .cred b { color: #2d2312; background: rgba(200,162,78,0.15); padding: 1px 6px; border-radius: 4px; }
+  .footer { text-align: center; margin-top: 20px; font-size: 10px; color: #999; }
   @media print { body { margin: 10px; } .grid { gap: 8px; } }
 </style></head><body>
-<h1>ข้อมูลบัญชีเข้าสู่ระบบ — สหวิทยาเขตวชิรบูรพา</h1>
-<div class="grid">${credentials.map((c) => `
+<h1>🏛️ ข้อมูลบัญชีเข้าสู่ระบบ — สหวิทยาเขตวชิรบูรพา</h1>
+<div class="grid">${credentials.map((c, i) => `
   <div class="card">
-    <div class="name">${c.name}</div>
+    <div class="card-header"><div class="school-num">${i + 1}</div><div class="name">${c.name}</div></div>
     <div class="cred">ชื่อผู้ใช้: <b>${c.username}</b></div>
     <div class="cred">รหัสผ่าน: <b>${c.password}</b></div>
   </div>`).join("")}
-</div></body></html>`);
+</div>
+<div class="footer">สภานักเรียน สหวิทยาเขตวชิรบูรพา — ${new Date().toLocaleDateString("th-TH")}</div>
+</body></html>`);
     w.document.close(); w.focus(); setTimeout(() => { w.print(); }, 500);
   };
 
-  // A5 QR print — 2 schools per A4 page, landscape, with school logos
+  // Beautified A5 QR print
   const handlePrintQR = () => {
     const w = window.open("", "_blank");
     if (!w) return;
@@ -231,32 +286,58 @@ export default function Admin() {
     for (let i = 0; i < credSchools.length; i += 2) {
       pairs.push(credSchools.slice(i, i + 2));
     }
+    const HOST_LOGO = "https://upload.wikimedia.org/wikipedia/commons/9/9f/RSL001.png";
     const cardsHtml = pairs.map((pair) =>
       `<div class="page">${pair.map((s) => {
         const url = typeof window !== "undefined" ? `${window.location.origin}/vote?token=${s.loginToken}` : "";
         const logoHtml = s.logoUrl ? `<img src="${s.logoUrl.replace(/^http:\/\//i, "https://")}" class="logo" />` : "";
         return `<div class="half">
-          ${logoHtml}
-          <div class="name">${s.name}</div>
-          <div class="qr"><img src="https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(url)}" width="280" height="280" /></div>
-          <div class="url">${url}</div>
-          <div class="instruction">สแกน QR Code เพื่อเข้าสู่ระบบลงมติ</div>
+          <div class="card-inner">
+            <div class="gold-bar"></div>
+            <div class="header-row">
+              <img src="${HOST_LOGO}" class="host-logo" />
+              <div class="header-text">
+                <div class="header-title">สภานักเรียน</div>
+                <div class="header-sub">สหวิทยาเขตวชิรบูรพา</div>
+              </div>
+            </div>
+            <div class="school-section">
+              ${logoHtml}
+              <div class="name">${s.name}</div>
+            </div>
+            <div class="qr-frame">
+              <div class="qr"><img src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(url)}&color=2d2312" width="240" height="240" /></div>
+            </div>
+            <div class="scan-text">📱 สแกน QR Code เพื่อเข้าสู่ระบบลงมติ</div>
+            <div class="url">${url}</div>
+            <div class="gold-bar-bottom"></div>
+          </div>
         </div>`;
       }).join("")}</div>`
     ).join("");
 
     w.document.write(`<!DOCTYPE html><html lang="th"><head><meta charset="utf-8"><title>QR Code เข้าสู่ระบบ</title>
 <style>
-  @page { size: A4 landscape; margin: 10mm; }
+  @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700;800&display=swap');
+  @page { size: A4 landscape; margin: 8mm; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Sarabun', sans-serif; }
-  .page { display: flex; width: 100%; height: 100vh; page-break-after: always; }
-  .half { width: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; border: 1px dashed #c8a24e; }
-  .logo { width: 80px; height: 80px; object-fit: contain; margin-bottom: 16px; }
-  .name { font-weight: 700; font-size: 16px; text-align: center; margin-bottom: 16px; color: #2d2312; }
-  .qr { margin-bottom: 12px; }
-  .url { font-size: 8px; color: #999; word-break: break-all; text-align: center; max-width: 300px; margin-bottom: 8px; }
-  .instruction { font-size: 12px; color: #8b6914; font-weight: 600; }
+  body { font-family: 'Sarabun', sans-serif; color: #2d2312; }
+  .page { display: flex; width: 100%; height: 100vh; page-break-after: always; gap: 12px; padding: 4px; }
+  .half { width: 50%; display: flex; align-items: center; justify-content: center; }
+  .card-inner { width: 100%; max-width: 380px; border: 2.5px solid #c8a24e; border-radius: 20px; padding: 0; overflow: hidden; background: #fffdf7; position: relative; }
+  .gold-bar { height: 6px; background: linear-gradient(90deg, #daa520, #c8a24e, #b8860b); }
+  .gold-bar-bottom { height: 4px; background: linear-gradient(90deg, #b8860b, #c8a24e, #daa520); }
+  .header-row { display: flex; align-items: center; gap: 10px; padding: 14px 20px 8px; }
+  .host-logo { width: 36px; height: 36px; object-fit: contain; }
+  .header-title { font-weight: 800; font-size: 14px; color: #2d2312; }
+  .header-sub { font-size: 10px; color: #8b6914; font-weight: 600; }
+  .school-section { text-align: center; padding: 8px 20px 12px; }
+  .logo { width: 56px; height: 56px; object-fit: contain; margin-bottom: 6px; border-radius: 50%; border: 2px solid rgba(200,162,78,0.25); padding: 3px; background: white; }
+  .name { font-weight: 700; font-size: 15px; text-align: center; color: #2d2312; line-height: 1.3; }
+  .qr-frame { display: flex; justify-content: center; padding: 0 20px 12px; }
+  .qr { background: white; padding: 12px; border-radius: 16px; border: 2px solid rgba(200,162,78,0.2); box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+  .scan-text { text-align: center; font-size: 12px; color: #8b6914; font-weight: 700; padding: 0 20px 4px; }
+  .url { font-size: 7px; color: #bbb; word-break: break-all; text-align: center; padding: 0 20px 12px; max-width: 320px; margin: 0 auto; }
 </style></head><body>${cardsHtml}</body></html>`);
     w.document.close(); w.focus(); setTimeout(() => { w.print(); }, 1200);
   };
@@ -320,6 +401,16 @@ export default function Admin() {
   // ===== Admin Panel (authenticated) =====
   return (
     <div className="animate-fade-in max-w-6xl mx-auto px-3 sm:px-4 py-4 sm:py-6">
+      {/* Toast Notifications */}
+      <div className="toast-container">
+        {toasts.map((t) => (
+          <div key={t.id} className={`toast ${t.type === "success" ? "toast-success" : "toast-error"}`}>
+            {t.type === "success" ? <CheckCircle2 size={16} /> : <XCircle size={16} />}
+            {t.message}
+          </div>
+        ))}
+      </div>
+
       {/* Page Header */}
       <div className="flex items-center justify-between mb-4 sm:mb-6 gap-3">
         <div className="min-w-0">
@@ -332,6 +423,9 @@ export default function Admin() {
             </span>
             <span className="badge-gold"><School size={12} /> {presentSchools}/{totalSchools}</span>
             <span className="badge-gold"><Wifi size={12} /> ออนไลน์ {onlineCount}</span>
+            <span className={`badge-gold ${!geoCheckEnabled ? '!bg-yellow-50 !border-yellow-300 !text-yellow-700' : ''}`}>
+              <MapPin size={12} /> GPS {geoCheckEnabled ? "เปิด" : "ปิด"}
+            </span>
           </div>
         </div>
         <button className="btn-outline-gold text-xs sm:text-sm flex items-center gap-1.5 flex-shrink-0 py-2 px-3" onClick={() => { document.cookie = "admin_token=; path=/; max-age=0"; setAuthed(false); }}>
@@ -367,7 +461,7 @@ export default function Admin() {
 
           {/* สถานะออนไลน์ */}
           <div className="card-royal !p-4 sm:!p-6">
-            <h3 className="section-title mb-3 sm:mb-4"><Wifi size={16} className="text-gold-600" /> สถานะออนไลน์</h3>
+            <h3 className="section-title mb-3 sm:mb-4"><Wifi size={16} className="text-gold-600" /> สถานะออนไลน์ <span className="text-xs font-normal text-royal-300 ml-2">(อัปเดตอัตโนมัติ)</span></h3>
             <div className="space-y-1.5 sm:grid sm:grid-cols-2 sm:gap-2 sm:space-y-0">
               {state.schools.map((s) => {
                 const isOnline = (state.onlineSchools || []).includes(s.id);
@@ -456,47 +550,105 @@ export default function Admin() {
             {state.motions.length > 0 && (
               <div className="border-t border-gold/15 pt-4">
                 <p className="text-sm font-semibold text-royal-600 mb-3">ญัตติทั้งหมด ({state.motions.length})</p>
-                <div className="space-y-2 max-h-96 overflow-y-auto">
+                <div className="space-y-2 max-h-[600px] overflow-y-auto">
                   {state.motions.map((m) => {
                     const v = state.votes[m.id] || {};
                     const choices = m.allowedChoices || ["AGREE", "DISAGREE", "ABSTAIN"];
                     const isExpanded = expandedMotion === m.id;
                     const details = state.voteDetails[m.id] || [];
+                    const totalVotes = choices.reduce((sum, c) => sum + (v[c] || 0), 0);
+                    const agree = v["AGREE"] || 0;
+                    const disagree = v["DISAGREE"] || 0;
+                    const result = totalVotes === 0 ? "-" : agree > disagree ? "ผ่าน" : agree < disagree ? "ไม่ผ่าน" : "เท่ากัน";
+                    const resultColor = agree > disagree ? "text-green-600" : agree < disagree ? "text-red-600" : "text-yellow-600";
                     return (
-                      <div key={m.id} className={`p-3 rounded-lg border text-sm transition-all ${state.activeMotionId === m.id ? "bg-gold-50 border-gold shadow-sm" : "bg-white border-gold/10"}`}>
+                      <div key={m.id} className={`p-3 sm:p-4 rounded-xl border text-sm transition-all ${state.activeMotionId === m.id ? "bg-gold-50 border-gold shadow-sm" : "bg-white border-gold/10 hover:border-gold/30"}`}>
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-2">
                           <div className="min-w-0 flex-1">
-                            <span className="font-semibold text-royal-800 text-xs sm:text-sm">{m.title}</span>
+                            <span className="font-bold text-royal-800 text-xs sm:text-sm">{m.title}</span>
                             {state.activeMotionId === m.id && <span className="ml-2 badge-gold text-xs">กำลังใช้งาน</span>}
-                            {m.allowedChoices && (
-                              <div className="flex gap-1 mt-1 flex-wrap">
-                                {m.allowedChoices.map((c) => <span key={c} className="text-[10px] bg-cream-100 text-royal-400 px-1.5 py-0.5 rounded">{CHOICE_LABELS[c] || c}</span>)}
-                              </div>
-                            )}
+                            {m.description && <p className="text-xs text-royal-400 mt-0.5">{m.description}</p>}
                           </div>
                           <div className="flex items-center gap-2 flex-shrink-0">
-                            <div className="flex gap-2 text-xs font-mono">
-                              {choices.map((c) => (
-                                <span key={c} className="text-royal-500">{(CHOICE_LABELS[c] || c).slice(0, 3)}: {v[c] || 0}</span>
-                              ))}
-                            </div>
-                            <button onClick={() => setExpandedMotion(isExpanded ? null : m.id)} className="text-gold-500 hover:text-gold-700 p-1">
+                            {totalVotes > 0 && <span className={`text-xs font-bold ${resultColor}`}>{result}</span>}
+                            <span className="text-xs text-royal-300">{totalVotes} เสียง</span>
+                            <button onClick={() => setExpandedMotion(isExpanded ? null : m.id)} className="text-gold-500 hover:text-gold-700 p-1 rounded-lg hover:bg-gold/10 transition-colors">
                               {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                             </button>
-                            <button onClick={() => deleteMotion(m.id)} className="text-red-400 hover:text-red-600 p-1"><Trash2 size={14} /></button>
+                            <button onClick={() => deleteMotion(m.id)} className="text-red-400 hover:text-red-600 p-1 rounded-lg hover:bg-red-50 transition-colors"><Trash2 size={14} /></button>
                           </div>
                         </div>
-                        {isExpanded && details.length > 0 && (
+
+                        {/* Vote summary bar */}
+                        {totalVotes > 0 && (
+                          <div className="mt-2 flex gap-1 h-2 rounded-full overflow-hidden bg-gray-100">
+                            {choices.map((c) => {
+                              const count = v[c] || 0;
+                              if (count === 0) return null;
+                              const pct = (count / totalVotes) * 100;
+                              const colors: Record<string, string> = {
+                                AGREE: "bg-green-500", DISAGREE: "bg-red-500", ABSTAIN: "bg-yellow-500",
+                                ACKNOWLEDGE: "bg-blue-500", RESOLUTION: "bg-purple-500",
+                              };
+                              return <div key={c} className={`${colors[c] || "bg-gray-400"} transition-all duration-500`} style={{ width: `${pct}%` }} />;
+                            })}
+                          </div>
+                        )}
+
+                        {/* Allowed choices tags */}
+                        {m.allowedChoices && (
+                          <div className="flex gap-1 mt-2 flex-wrap">
+                            {m.allowedChoices.map((c) => (
+                              <span key={c} className="text-[10px] bg-cream-100 text-royal-400 px-2 py-0.5 rounded-full">
+                                {CHOICE_LABELS[c] || c}: <b>{v[c] || 0}</b>
+                              </span>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Expanded vote details */}
+                        {isExpanded && (
                           <div className="mt-3 pt-3 border-t border-gold/10">
-                            <p className="text-xs font-semibold text-royal-500 mb-2">รายละเอียดการโหวต:</p>
-                            <div className="grid gap-1 max-h-40 overflow-y-auto">
-                              {details.map((d, i) => (
-                                <div key={i} className="flex justify-between text-xs bg-cream-50 p-1.5 rounded">
-                                  <span className="text-royal-600">{d.schoolName}</span>
-                                  <span className="font-semibold text-royal-800">{CHOICE_LABELS[d.choice] || d.choice}</span>
-                                </div>
-                              ))}
-                            </div>
+                            <p className="text-xs font-bold text-royal-600 mb-2 flex items-center gap-1">
+                              <FileText size={12} /> รายละเอียดการโหวต ({details.length} รายการ)
+                            </p>
+                            {details.length > 0 ? (
+                              <div className="space-y-1 max-h-60 overflow-y-auto">
+                                {/* Group by school */}
+                                {(() => {
+                                  const grouped: Record<string, VoteDetailItem[]> = {};
+                                  details.forEach((d) => {
+                                    if (!grouped[d.schoolName]) grouped[d.schoolName] = [];
+                                    grouped[d.schoolName].push(d);
+                                  });
+                                  return Object.entries(grouped).map(([schoolName, items]) => (
+                                    <div key={schoolName} className="bg-cream-50 border border-gold/10 rounded-lg p-2.5">
+                                      <div className="flex items-center justify-between">
+                                        <span className="text-xs font-semibold text-royal-700 flex items-center gap-1"><School size={11} /> {schoolName}</span>
+                                        <div className="flex gap-1">
+                                          {items.map((item, i) => {
+                                            const choiceColors: Record<string, string> = {
+                                              AGREE: "bg-green-100 text-green-700 border-green-200",
+                                              DISAGREE: "bg-red-100 text-red-700 border-red-200",
+                                              ABSTAIN: "bg-yellow-100 text-yellow-700 border-yellow-200",
+                                              ACKNOWLEDGE: "bg-blue-100 text-blue-700 border-blue-200",
+                                              RESOLUTION: "bg-purple-100 text-purple-700 border-purple-200",
+                                            };
+                                            return (
+                                              <span key={i} className={`text-[10px] px-2 py-0.5 rounded-full border font-semibold ${choiceColors[item.choice] || "bg-gray-100 text-gray-600"}`}>
+                                                {CHOICE_LABELS[item.choice] || item.choice}
+                                              </span>
+                                            );
+                                          })}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ));
+                                })()}
+                              </div>
+                            ) : (
+                              <div className="text-center py-4 text-royal-300 text-xs">ยังไม่มีการโหวต</div>
+                            )}
                           </div>
                         )}
                       </div>
@@ -603,11 +755,11 @@ export default function Admin() {
                 {schools.filter((s) => s.loginToken && s.username).map((s) => {
                   const url = typeof window !== "undefined" ? `${window.location.origin}/vote?token=${s.loginToken}` : "";
                   return (
-                    <div key={s.id} className="bg-white rounded-xl border border-gold/15 p-3 sm:p-4 text-center space-y-2 sm:space-y-3 hover:shadow-md transition-shadow">
+                    <div key={s.id} className="bg-white rounded-xl border-2 border-gold/15 p-3 sm:p-4 text-center space-y-2 sm:space-y-3 hover:shadow-lg hover:border-gold/30 transition-all">
                       {s.logoUrl && <div className="flex justify-center"><img src={s.logoUrl.replace(/^http:\/\//i, "https://")} alt={s.name} className="school-avatar" /></div>}
-                      <div className="font-semibold text-xs sm:text-sm text-royal-700 leading-snug">{s.name}</div>
+                      <div className="font-bold text-xs sm:text-sm text-royal-700 leading-snug">{s.name}</div>
                       <div className="flex justify-center">
-                        <div className="bg-white p-2 sm:p-3 rounded-lg border border-gold/10"><QRCode value={url || "loading"} bgColor="#ffffff" fgColor="#2d2312" size={100} /></div>
+                        <div className="bg-white p-3 rounded-xl border-2 border-gold/10 shadow-sm"><QRCode value={url || "loading"} bgColor="#ffffff" fgColor="#2d2312" size={110} /></div>
                       </div>
                       <div className="text-[9px] sm:text-[10px] break-all text-royal-300 leading-tight">{url}</div>
                     </div>
@@ -642,7 +794,38 @@ export default function Admin() {
 
       {/* ===== TAB: Settings ===== */}
       {activeTab === "settings" && (
-        <div className="animate-fade-in max-w-lg mx-auto">
+        <div className="animate-fade-in max-w-lg mx-auto space-y-4">
+          {/* Geo Check Toggle */}
+          <div className="card-royal !p-4 sm:!p-6">
+            <h3 className="section-title mb-4 sm:mb-5"><Navigation size={16} className="text-gold-600" /> ระบบตรวจสอบตำแหน่ง (GPS)</h3>
+            <div className="flex items-center justify-between p-4 rounded-xl border border-gold/15 bg-cream-50">
+              <div className="flex-1 min-w-0">
+                <div className="font-semibold text-royal-800 text-sm flex items-center gap-2">
+                  <MapPin size={16} className={geoCheckEnabled ? "text-green-600" : "text-red-500"} />
+                  ตรวจสอบตำแหน่งก่อนเข้าสู่ระบบ
+                </div>
+                <p className="text-xs text-royal-400 mt-1.5">
+                  {geoCheckEnabled
+                    ? "เปิดอยู่ — ผู้ใช้ต้องอนุญาตตำแหน่งและอยู่ในรัศมี 5 กม. จากจุดจัดงาน"
+                    : "ปิดอยู่ — ผู้ใช้สามารถเข้าสู่ระบบได้โดยไม่ต้องตรวจสอบตำแหน่ง (สำหรับทดสอบ)"}
+                </p>
+              </div>
+              <button
+                onClick={toggleGeoCheck}
+                className={`ml-4 relative inline-flex h-7 w-12 items-center rounded-full transition-colors flex-shrink-0 ${geoCheckEnabled ? "bg-green-500" : "bg-gray-300"}`}
+              >
+                <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-md transition-transform ${geoCheckEnabled ? "translate-x-6" : "translate-x-1"}`} />
+              </button>
+            </div>
+            {!geoCheckEnabled && (
+              <div className="mt-3 bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-700 flex items-start gap-2">
+                <AlertTriangle size={16} className="flex-shrink-0 mt-0.5" />
+                <div>ระบบตรวจสอบตำแหน่งปิดอยู่ — ผู้ใช้จากทุกที่สามารถเข้าสู่ระบบได้ เหมาะสำหรับการทดสอบเท่านั้น</div>
+              </div>
+            )}
+          </div>
+
+          {/* Change Password */}
           <div className="card-royal !p-4 sm:!p-6">
             <h3 className="section-title mb-4 sm:mb-5"><KeyRound size={16} className="text-gold-600" /> เปลี่ยนรหัสผ่านผู้ดูแล</h3>
             <div className="space-y-4">
@@ -660,6 +843,28 @@ export default function Admin() {
                 <KeyRound size={16} /> {changingPw ? "กำลังเปลี่ยน..." : "เปลี่ยนรหัสผ่าน"}
               </button>
             </div>
+          </div>
+
+          {/* System Reset */}
+          <div className="card-royal !p-4 sm:!p-6 border-red-200">
+            <h3 className="section-title mb-4 sm:mb-5 !text-red-700"><RotateCcw size={16} className="text-red-500" /> รีเซ็ตระบบ</h3>
+            <p className="text-sm text-royal-500 mb-2">ลบข้อมูลทั้งหมดที่เกิดขึ้นในระบบ:</p>
+            <ul className="text-xs text-royal-400 space-y-1 mb-4 ml-4 list-disc">
+              <li>ผลการลงมติทั้งหมด</li>
+              <li>ญัตติทั้งหมด</li>
+              <li>บันทึกการทำงาน (Audit Log)</li>
+              <li>การเช็คชื่อ/เข้าร่วม</li>
+              <li>เซสชันออนไลน์ทั้งหมด</li>
+            </ul>
+            <p className="text-xs text-royal-300 mb-4">⚠️ ข้อมูลโรงเรียนและบัญชีผู้ใช้จะไม่ถูกลบ</p>
+            <button
+              className="w-full py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition-all flex items-center justify-center gap-2 text-sm"
+              onClick={handleResetSystem}
+              disabled={resetting}
+            >
+              {resetting ? <RefreshCw size={16} className="animate-spin" /> : <RotateCcw size={16} />}
+              {resetting ? "กำลังรีเซ็ต..." : "รีเซ็ตระบบทั้งหมด"}
+            </button>
           </div>
         </div>
       )}

@@ -1,10 +1,11 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { io, Socket } from "socket.io-client";
 import { useRouter } from "next/router";
 import {
   Vote as VoteIcon, School, User, QrCode, LogIn,
   ThumbsUp, ThumbsDown, Hand, CheckCircle, Clock, Inbox,
   ClipboardList, Lock, AlertTriangle, BookCheck, FileCheck2, Edit3,
+  MapPin, Shield, RefreshCw, Navigation,
 } from "lucide-react";
 
 const CHOICE_META: Record<string, { label: string; Icon: any; btnClass: string }> = {
@@ -44,37 +45,77 @@ export default function VotePage() {
   const [loginError, setLoginError] = useState("");
   const [loginLoading, setLoginLoading] = useState(false);
   const [kicked, setKicked] = useState<string | null>(null);
-  const [geoStatus, setGeoStatus] = useState<"idle" | "getting" | "ok" | "denied">("idle");
+  const [geoStatus, setGeoStatus] = useState<"idle" | "getting" | "ok" | "denied" | "disabled">("idle");
   const [geoCoords, setGeoCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [geoCheckEnabled, setGeoCheckEnabled] = useState<boolean | null>(null);
+  const [geoRetrying, setGeoRetrying] = useState(false);
   const router = useRouter();
 
-  // Get geolocation on mount
+  // Check if geo check is enabled
   useEffect(() => {
-    if (!navigator.geolocation) { setGeoStatus("denied"); return; }
+    fetch("/api/admin/login-mode")
+      .then((r) => r.json())
+      .then((data) => {
+        const enabled = data.geoCheckEnabled ?? true;
+        setGeoCheckEnabled(enabled);
+        if (!enabled) setGeoStatus("disabled");
+      })
+      .catch(() => setGeoCheckEnabled(true));
+  }, []);
+
+  // Request geolocation
+  const requestGeo = useCallback(() => {
+    if (geoCheckEnabled === false) {
+      setGeoStatus("disabled");
+      return;
+    }
+    if (!navigator.geolocation) {
+      setGeoStatus("denied");
+      return;
+    }
     setGeoStatus("getting");
+    setGeoRetrying(false);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         setGeoCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
         setGeoStatus("ok");
       },
-      () => { setGeoStatus("denied"); },
-      { enableHighAccuracy: true, timeout: 10000 }
+      () => {
+        setGeoStatus("denied");
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     );
-  }, []);
+  }, [geoCheckEnabled]);
+
+  // Get geolocation on mount (after checking if enabled)
+  useEffect(() => {
+    if (geoCheckEnabled === null) return; // still loading
+    requestGeo();
+  }, [geoCheckEnabled, requestGeo]);
 
   // Setup socket connection
   useEffect(() => {
-    const s = io({ path: "/api/socket", transports: ["polling"] });
-    setSocket(s);
-    s.on("state:update", (data: State) => { setState(data); setVoted(null); });
-    // Listen for session invalidation (another device logged in)
-    s.on("session:invalid", (data: { reason: string }) => {
-      setKicked(data.reason || "เซสชันหมดอายุ");
-      setAuthToken(null); setSessionToken(null); setSchoolId(""); setVoter("");
-      localStorage.removeItem("auth_token"); localStorage.removeItem("session_token");
+    fetch("/api/socket").then(() => {
+      const s = io({ path: "/api/socket", transports: ["polling"] });
+      setSocket(s);
+      s.on("state:update", (data: State) => { setState(data); setVoted(null); });
+      s.on("session:invalid", (data: { reason: string }) => {
+        setKicked(data.reason || "เซสชันหมดอายุ");
+        setAuthToken(null); setSessionToken(null); setSchoolId(""); setVoter("");
+        localStorage.removeItem("auth_token"); localStorage.removeItem("session_token");
+      });
+      return () => { s.disconnect(); };
     });
-    return () => { s.disconnect(); };
   }, []);
+
+  // Heartbeat — send every 10 seconds to stay "online"
+  useEffect(() => {
+    if (!socket) return;
+    const interval = setInterval(() => {
+      socket.emit("client:heartbeat");
+    }, 10000);
+    return () => clearInterval(interval);
+  }, [socket]);
 
   // Identify to server when we have auth info
   useEffect(() => {
@@ -85,6 +126,8 @@ export default function VotePage() {
 
   // QR token login
   useEffect(() => {
+    if (geoCheckEnabled === true && geoStatus !== "ok") return; // wait for geo if enabled
+    if (geoCheckEnabled === null) return;
     const token = (router.query.token as string) || localStorage.getItem("auth_token") || null;
     if (!token) return;
     const login = async () => {
@@ -104,9 +147,13 @@ export default function VotePage() {
       } catch (e) { console.error(e); }
     };
     void login();
-  }, [router.query.token, geoCoords]);
+  }, [router.query.token, geoCoords, geoStatus, geoCheckEnabled]);
 
   const handlePasswordLogin = async () => {
+    if (geoCheckEnabled && geoStatus !== "ok" && geoStatus !== "disabled") {
+      setLoginError("กรุณาอนุญาตการเข้าถึงตำแหน่งก่อนเข้าสู่ระบบ");
+      return;
+    }
     setLoginError(""); setLoginLoading(true);
     try {
       const body: any = { username, password };
@@ -120,6 +167,12 @@ export default function VotePage() {
       localStorage.setItem("auth_token", data.token); localStorage.setItem("session_token", data.sessionToken);
       setSchoolId(data.school.id); setVoter(data.user.name); setKicked(null);
     } catch { setLoginError("เกิดข้อผิดพลาดในการเชื่อมต่อ"); } finally { setLoginLoading(false); }
+  };
+
+  const handleRetryGeo = () => {
+    setGeoRetrying(true);
+    setLoginError("");
+    requestGeo();
   };
 
   const activeMotion = useMemo(
@@ -143,19 +196,74 @@ export default function VotePage() {
   const schoolLogo = currentSchool?.logoUrl?.replace(/^http:\/\//i, "https://");
   const isLoggedIn = !!authToken && !!schoolId;
 
+  // BLOCK page if geo is required but not granted
+  if (geoCheckEnabled === true && (geoStatus === "denied" || geoStatus === "idle")) {
+    return (
+      <div className="geo-overlay">
+        <div className="text-center max-w-md px-6">
+          <div className="w-24 h-24 rounded-full bg-gradient-to-br from-gold-100 to-gold-200 flex items-center justify-center mx-auto mb-6 shadow-lg">
+            <Navigation size={48} className="text-gold-600" />
+          </div>
+          <h2 className="text-2xl font-extrabold text-royal-900 mb-3">จำเป็นต้องเปิดตำแหน่ง</h2>
+          <p className="text-royal-500 mb-2 text-sm leading-relaxed">
+            ระบบกำหนดให้ต้องเปิดการเข้าถึงตำแหน่งที่ตั้ง (GPS) เพื่อยืนยันว่าคุณอยู่ในบริเวณจัดงาน
+          </p>
+          <div className="bg-gold-50 border border-gold/20 rounded-xl p-4 mb-6 text-left space-y-2">
+            <p className="text-sm font-semibold text-royal-700 flex items-center gap-2"><MapPin size={15} className="text-gold-600" /> วิธีเปิดตำแหน่ง:</p>
+            <ol className="text-xs text-royal-500 space-y-1 ml-6 list-decimal">
+              <li>กดปุ่ม "อนุญาต" เมื่อเบราว์เซอร์ขอสิทธิ์</li>
+              <li>หากปิดไว้ ให้ไปที่ <b>ตั้งค่า &gt; สิทธิ์ไซต์ &gt; ตำแหน่ง</b></li>
+              <li>เปิดใช้งาน GPS/ตำแหน่ง แล้วกดลองใหม่</li>
+            </ol>
+          </div>
+          <button
+            className="btn-gold w-full flex items-center justify-center gap-2 py-3.5 text-lg"
+            onClick={handleRetryGeo}
+            disabled={geoRetrying}
+          >
+            {geoRetrying ? <RefreshCw size={18} className="animate-spin" /> : <MapPin size={18} />}
+            {geoRetrying ? "กำลังตรวจสอบ..." : "ลองใหม่อีกครั้ง"}
+          </button>
+          <p className="text-xs text-royal-300 mt-4 flex items-center justify-center gap-1">
+            <Shield size={12} /> ข้อมูลตำแหน่งใช้เพื่อตรวจสอบเท่านั้น ไม่มีการจัดเก็บ
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (geoCheckEnabled === true && geoStatus === "getting") {
+    return (
+      <div className="geo-overlay">
+        <div className="text-center max-w-md px-6">
+          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center mx-auto mb-6">
+            <MapPin size={36} className="text-blue-600 animate-pulse" />
+          </div>
+          <h2 className="text-xl font-extrabold text-royal-900 mb-2">กำลังตรวจสอบตำแหน่ง</h2>
+          <p className="text-royal-400 text-sm">กรุณารอสักครู่ และอนุญาตเมื่อเบราว์เซอร์ขอสิทธิ์...</p>
+          <div className="mt-6 w-12 h-12 rounded-full border-3 border-gold-300 border-t-gold-600 animate-spin mx-auto" />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="animate-fade-in max-w-2xl mx-auto px-4 py-8">
       {/* Header */}
       <div className="text-center mb-8">
-        <h2 className="text-2xl font-extrabold text-royal-900 flex items-center justify-center gap-2">
-          <VoteIcon size={24} /> ลงมติ
-        </h2>
+        <div className="inline-flex items-center gap-3 bg-gradient-to-r from-royal-800 to-royal-900 text-white px-6 py-3 rounded-2xl shadow-lg mb-4">
+          <VoteIcon size={24} className="text-gold-400" />
+          <h2 className="text-xl font-extrabold tracking-wide">ระบบลงมติ</h2>
+        </div>
         <div className="ornament-divider max-w-xs mx-auto mt-2"><div className="diamond" /></div>
         {schoolName && (
           <div className="mt-4 flex flex-col items-center gap-2">
             {schoolLogo && <img src={schoolLogo} alt={schoolName} className="school-avatar-lg" />}
             <span className="badge-gold text-sm flex items-center gap-1.5 w-fit"><School size={13} /> {schoolName}</span>
             {voter && <span className="text-xs text-royal-400">ลงชื่อเข้าเป็น: {voter}</span>}
+            {geoStatus === "ok" && (
+              <span className="text-[10px] text-green-600 flex items-center gap-1"><MapPin size={10} /> ยืนยันตำแหน่งแล้ว</span>
+            )}
           </div>
         )}
       </div>
@@ -174,14 +282,13 @@ export default function VotePage() {
       {!isLoggedIn && (
         <div className="card-royal mb-6">
           <h3 className="section-title mb-4"><LogIn size={16} className="text-gold-600" /> เข้าสู่ระบบเพื่อลงมติ</h3>
-          {geoStatus === "getting" && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-700 text-center mb-4">กำลังตรวจสอบตำแหน่งที่ตั้ง...</div>
-          )}
-          {geoStatus === "denied" && (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-700 text-center mb-4">
-              ⚠️ ไม่สามารถเข้าถึงตำแหน่งได้ กรุณาอนุญาตการเข้าถึงตำแหน่งในเบราว์เซอร์
+
+          {geoStatus === "ok" && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-sm text-green-700 text-center mb-4 flex items-center justify-center gap-2">
+              <CheckCircle size={16} /> ตรวจสอบตำแหน่งเรียบร้อยแล้ว
             </div>
           )}
+
           <div className="flex border-b border-gold/20 mb-5">
             <button className={`flex-1 py-3 text-sm font-semibold flex items-center justify-center gap-1.5 border-b-2 transition-colors ${loginTab === "qr" ? "border-gold-500 text-gold-700" : "border-transparent text-royal-400 hover:text-royal-600"}`} onClick={() => setLoginTab("qr")}>
               <QrCode size={15} /> สแกน QR Code
@@ -248,10 +355,7 @@ export default function VotePage() {
                   <div className="text-sm text-royal-400 mt-1">
                     คุณเลือก: <span className="font-semibold">{CHOICE_META[voted]?.label || voted}</span>
                   </div>
-                  <button
-                    className="mt-6 text-xs text-royal-400 hover:text-gold-600 underline flex items-center gap-1 mx-auto transition-colors"
-                    onClick={() => setVoted(null)}
-                  >
+                  <button className="mt-6 text-xs text-royal-400 hover:text-gold-600 underline flex items-center gap-1 mx-auto transition-colors" onClick={() => setVoted(null)}>
                     <Edit3 size={12} /> ต้องการแก้ไขผลการโหวต?
                   </button>
                 </div>

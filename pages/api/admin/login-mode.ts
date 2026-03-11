@@ -3,7 +3,11 @@ import prisma from "../../../lib/prisma";
 import { verifyAdmin } from "../../../lib/adminAuth";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (!(await verifyAdmin(req, res))) return;
+  // GET is public (needed by vote page to check geoCheckEnabled)
+  // PUT requires admin auth
+  if (req.method === "PUT") {
+    if (!(await verifyAdmin(req, res))) return;
+  }
 
   try {
     if (req.method === "GET") {
@@ -13,19 +17,32 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       } catch {
         // DB not ready — return default
       }
-      return res.status(200).json({ loginMode: control?.loginMode || "PER_SCHOOL" });
+      return res.status(200).json({
+        loginMode: control?.loginMode || "PER_SCHOOL",
+        geoCheckEnabled: control?.geoCheckEnabled ?? true,
+      });
     }
     if (req.method === "PUT") {
-      const { loginMode } = req.body;
-      if (!["PER_SCHOOL", "PER_INDIVIDUAL"].includes(loginMode)) {
-        return res.status(400).json({ error: "Invalid loginMode" });
+      const { loginMode, geoCheckEnabled } = req.body;
+      const data: any = {};
+      if (loginMode && ["PER_SCHOOL", "PER_INDIVIDUAL"].includes(loginMode)) {
+        data.loginMode = loginMode;
       }
-      await prisma.controlState.upsert({ where: { id: 1 }, update: { loginMode }, create: { loginMode } });
-      return res.status(200).json({ loginMode });
+      if (typeof geoCheckEnabled === "boolean") {
+        data.geoCheckEnabled = geoCheckEnabled;
+      }
+      if (Object.keys(data).length === 0) {
+        return res.status(400).json({ error: "No valid fields to update" });
+      }
+      const updated = await prisma.controlState.upsert({ where: { id: 1 }, update: data, create: data });
+      return res.status(200).json({
+        loginMode: updated.loginMode,
+        geoCheckEnabled: updated.geoCheckEnabled,
+      });
     }
     return res.status(405).end();
   } catch (err: any) {
     console.error("login-mode error:", err);
-    return res.status(200).json({ loginMode: "PER_SCHOOL", _dbError: true });
+    return res.status(200).json({ loginMode: "PER_SCHOOL", geoCheckEnabled: true, _dbError: true });
   }
 }
