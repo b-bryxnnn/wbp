@@ -21,10 +21,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const geoCheckEnabled = control?.geoCheckEnabled ?? true;
 
   // Geolocation check — mandatory when enabled
-  const lat = req.query.lat ? Number(req.query.lat) : undefined;
-  const lng = req.query.lng ? Number(req.query.lng) : undefined;
+  const lat = req.query.lat !== undefined ? Number(req.query.lat) : undefined;
+  const lng = req.query.lng !== undefined ? Number(req.query.lng) : undefined;
   if (geoCheckEnabled) {
-    if (lat === undefined || lng === undefined) {
+    if (lat === undefined || lng === undefined || Number.isNaN(lat) || Number.isNaN(lng)) {
       return res.status(403).json({ error: "กรุณาเปิดการเข้าถึงตำแหน่งที่ตั้งก่อนเข้าสู่ระบบ" });
     }
     const geo = isWithinRadius(lat, lng);

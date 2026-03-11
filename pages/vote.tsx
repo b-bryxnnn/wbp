@@ -1,11 +1,11 @@
-import React, { useEffect, useMemo, useState, useCallback } from "react";
+import React, { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { io, Socket } from "socket.io-client";
 import { useRouter } from "next/router";
 import {
   Vote as VoteIcon, School, User, QrCode, LogIn,
   ThumbsUp, ThumbsDown, Hand, CheckCircle, Clock, Inbox,
   ClipboardList, Lock, AlertTriangle, BookCheck, FileCheck2, Edit3,
-  MapPin, Shield, RefreshCw, Navigation,
+  MapPin, Shield, RefreshCw, Navigation, Info, XCircle,
 } from "lucide-react";
 
 const CHOICE_META: Record<string, { label: string; Icon: any; btnClass: string }> = {
@@ -31,6 +31,8 @@ type State = {
   schools: SchoolT[];
 };
 
+type Toast = { id: number; type: "success" | "error" | "info"; message: string };
+
 export default function VotePage() {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [state, setState] = useState<State>({ motions: [], votes: {}, attendance: {}, bigScreenMessage: "", votingOpen: false, activeMotionId: null, countdownEnd: null, schools: [] });
@@ -49,7 +51,15 @@ export default function VotePage() {
   const [geoCoords, setGeoCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [geoCheckEnabled, setGeoCheckEnabled] = useState<boolean | null>(null);
   const [geoRetrying, setGeoRetrying] = useState(false);
+  const [toasts, setToasts] = useState<Toast[]>([]);
+  const toastIdRef = useRef(0);
   const router = useRouter();
+
+  const pushToast = useCallback((type: Toast["type"], message: string) => {
+    const id = ++toastIdRef.current;
+    setToasts((prev) => [...prev, { id, type, message }]);
+    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 3500);
+  }, []);
 
   // Check if geo check is enabled
   useEffect(() => {
@@ -137,10 +147,12 @@ export default function VotePage() {
         const res = await fetch(url);
         if (!res.ok) {
           const data = await res.json().catch(() => ({}));
-          if (data.error) setLoginError(data.error);
+          if (data.error) { setLoginError(data.error); pushToast("error", data.error); }
           return;
         }
         const data = await res.json();
+        setLoginError("");
+        pushToast("success", "เข้าสู่ระบบด้วย QR สำเร็จ");
         setAuthToken(data.token); setSessionToken(data.sessionToken);
         localStorage.setItem("auth_token", data.token); localStorage.setItem("session_token", data.sessionToken);
         setSchoolId(data.school.id); setVoter(data.user.name); setKicked(null);
@@ -156,17 +168,23 @@ export default function VotePage() {
     }
     setLoginError(""); setLoginLoading(true);
     try {
+      pushToast("info", "ส่งคำขอเข้าสู่ระบบแล้ว");
       const body: any = { username, password };
       if (geoCoords) { body.lat = geoCoords.lat; body.lng = geoCoords.lng; }
       const res = await fetch("/api/auth/login", {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
       });
       const data = await res.json();
-      if (!res.ok) { setLoginError(data.error || "เข้าสู่ระบบไม่สำเร็จ"); return; }
+      if (!res.ok) { const msg = data.error || "เข้าสู่ระบบไม่สำเร็จ"; setLoginError(msg); pushToast("error", msg); return; }
+      pushToast("success", "เข้าสู่ระบบสำเร็จ");
       setAuthToken(data.token); setSessionToken(data.sessionToken);
       localStorage.setItem("auth_token", data.token); localStorage.setItem("session_token", data.sessionToken);
       setSchoolId(data.school.id); setVoter(data.user.name); setKicked(null);
-    } catch { setLoginError("เกิดข้อผิดพลาดในการเชื่อมต่อ"); } finally { setLoginLoading(false); }
+    } catch {
+      const msg = "เกิดข้อผิดพลาดในการเชื่อมต่อ";
+      setLoginError(msg);
+      pushToast("error", msg);
+    } finally { setLoginLoading(false); }
   };
 
   const handleRetryGeo = () => {
@@ -184,11 +202,13 @@ export default function VotePage() {
 
   const castVote = (choice: VoteChoice) => {
     if (!socket || !activeMotion || !authToken) return;
+    pushToast("info", "กำลังส่งผลการลงมติ...");
     socket.emit("vote:cast", {
       motionId: activeMotion.id, choice, authToken,
       schoolId: schoolId ? Number(schoolId) : undefined, voter,
     });
     setVoted(choice);
+    pushToast("success", "บันทึกผลโหวตแล้ว");
   };
 
   const currentSchool = state.schools.find((s) => s.id === schoolId);
@@ -249,6 +269,15 @@ export default function VotePage() {
 
   return (
     <div className="animate-fade-in max-w-2xl mx-auto px-4 py-8">
+      <div className="toast-container">
+        {toasts.map((t) => (
+          <div key={t.id} className={`toast ${t.type === "success" ? "toast-success" : t.type === "info" ? "toast-info" : "toast-error"}`}>
+            {t.type === "success" ? <CheckCircle size={16} /> : t.type === "info" ? <Info size={16} /> : <XCircle size={16} />}
+            {t.message}
+          </div>
+        ))}
+      </div>
+
       {/* Header */}
       <div className="text-center mb-8">
         <div className="inline-flex items-center gap-3 bg-gradient-to-r from-royal-800 to-royal-900 text-white px-6 py-3 rounded-2xl shadow-lg mb-4">
@@ -304,6 +333,9 @@ export default function VotePage() {
               <p className="text-base font-semibold text-royal-700 mb-2">สแกน QR Code เพื่อเข้าสู่ระบบ</p>
               <p className="text-sm text-royal-400 mb-2">ใช้กล้องมือถือสแกน QR Code ที่ได้รับจากผู้ดูแลระบบ</p>
               <p className="text-xs text-royal-300">ระบบจะเข้าสู่หน้าลงมติโดยอัตโนมัติ</p>
+              {loginError && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700 text-center mt-4">{loginError}</div>
+              )}
             </div>
           ) : (
             <div className="space-y-3">

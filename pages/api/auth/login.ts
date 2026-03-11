@@ -24,10 +24,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   // Geolocation check — mandatory when enabled
   if (geoCheckEnabled) {
-    if (lat === undefined || lng === undefined) {
+    const latNum = lat !== undefined ? Number(lat) : undefined;
+    const lngNum = lng !== undefined ? Number(lng) : undefined;
+    if (latNum === undefined || lngNum === undefined || Number.isNaN(latNum) || Number.isNaN(lngNum)) {
       return res.status(403).json({ error: "กรุณาเปิดการเข้าถึงตำแหน่งที่ตั้งก่อนเข้าสู่ระบบ" });
     }
-    const geo = isWithinRadius(Number(lat), Number(lng));
+    const geo = isWithinRadius(latNum, lngNum);
     if (!geo.allowed) {
       return res.status(403).json({
         error: `ไม่สามารถเข้าสู่ระบบได้ — คุณอยู่นอกพื้นที่ที่อนุญาต (ห่าง ${geo.distanceKm.toFixed(1)} กม. จากจุดจัดงาน, อนุญาตไม่เกิน 5 กม.)`,

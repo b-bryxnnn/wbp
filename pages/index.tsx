@@ -38,21 +38,21 @@ export default function Home() {
 						<p className="text-gold-600 text-sm md:text-base font-semibold tracking-widest uppercase flex items-center justify-center gap-2">
 							<Sparkles size={14} /> ยินดีต้อนรับ <Sparkles size={14} />
 						</p>
-						<h1 className="text-3xl md:text-5xl font-extrabold text-royal-900 leading-tight">
-							ยินดีต้อนรับสภานักเรียน
-						</h1>
-						<h2 className="text-xl md:text-3xl font-bold text-gold-600">
-							โรงเรียนในเครือสหวิทยาเขตวชิรบูรพา
-						</h2>
+									<h1 className="text-3xl md:text-5xl font-extrabold text-royal-900 leading-tight text-balance">
+										โรงเรียนรัตนโกสินทร์สมโภชลาดกระบัง
+									</h1>
+									<h2 className="text-xl md:text-3xl font-bold text-gold-600 text-balance">
+										มีความยินดีอย่างยิ่งที่ได้ต้อนรับคณะผู้แทนสภานักเรียนในเครือสหวิทยาเขตวชิรบูรพา
+									</h2>
 					</div>
 
 					<div className="ornament-divider max-w-xs mx-auto my-6">
 						<div className="diamond" />
 					</div>
 
-					<p className="text-royal-600 text-base md:text-lg max-w-2xl mx-auto mb-1 leading-relaxed font-medium">
-						อบรมโครงการส่งเสริมภาวะผู้นำและศักยภาพสภานักเรียน
-					</p>
+								<p className="text-royal-600 text-base md:text-lg max-w-2xl mx-auto mb-1 leading-relaxed font-medium text-balance">
+									อบรมโครงการส่งเสริมภาวะผู้นำและศักยภาพสภานักเรียน พร้อมระบบลงมติออนไลน์
+								</p>
 					<p className="text-royal-400 text-sm md:text-base mb-10">
 						สำนักงานเขตพื้นที่การศึกษามัธยมศึกษากรุงเทพมหานคร เขต 2
 					</p>

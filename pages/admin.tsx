@@ -7,7 +7,7 @@ import {
   ScrollText, CheckCircle, School, Key, Printer, RefreshCw,
   Lock, LogIn, ShieldCheck, KeyRound, Eye, EyeOff, LogOut, Inbox,
   Trash2, Globe, Users, Wifi, WifiOff, BookCheck, FileCheck2, ChevronDown, ChevronUp, FileDown,
-  MapPin, RotateCcw, AlertTriangle, XCircle, CheckCircle2, Navigation,
+  MapPin, RotateCcw, AlertTriangle, XCircle, CheckCircle2, Navigation, Info,
 } from "lucide-react";
 
 const QRCode = dynamic(() => import("react-qr-code"), { ssr: false });
@@ -28,7 +28,7 @@ const CHOICE_LABELS: Record<string, string> = {
 type Motion = { id: number; title: string; description: string; isActive: boolean; allowedChoices?: string[] };
 type SchoolT = { id: number; name: string; loginToken?: string; logoUrl?: string; username?: string | null };
 type VoteDetailItem = { schoolName: string; userName: string; choice: string };
-type Toast = { id: number; type: "success" | "error"; message: string };
+type Toast = { id: number; type: "success" | "error" | "info"; message: string };
 
 type State = {
   motions: Motion[];
@@ -90,7 +90,7 @@ export default function Admin() {
   const toastIdRef = useRef(0);
 
   // Toast helper
-  const showToast = useCallback((type: "success" | "error", message: string) => {
+  const showToast = useCallback((type: "success" | "error" | "info", message: string) => {
     const id = ++toastIdRef.current;
     setToasts((prev) => [...prev, { id, type, message }]);
     setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 4000);
@@ -172,19 +172,28 @@ export default function Admin() {
   }, [authed, activeTab]);
 
   const sendMessage = () => {
+    showToast("info", "ส่งคำสั่งไปยังจอใหญ่แล้ว");
     socket?.emit("admin:screen-control", { message });
   };
   const addMotion = () => {
     if (!motionTitle) return;
+    showToast("info", "ส่งคำขอเพิ่มญัตติแล้ว");
     socket?.emit("admin:add-motion", { title: motionTitle, description: motionDescription, allowedChoices: motionChoices });
     setMotionTitle(""); setMotionDescription(""); setMotionChoices(["AGREE", "DISAGREE", "ABSTAIN"]);
   };
   const deleteMotion = (motionId: number) => {
     if (!confirm("ต้องการลบญัตตินี้หรือไม่?")) return;
+    showToast("info", "กำลังลบญัตติ...");
     socket?.emit("admin:delete-motion", { motionId });
   };
-  const toggleVote = (open: boolean) => socket?.emit("admin:toggle-vote", { open, motionId: selectedMotion });
-  const setCountdownTimer = () => socket?.emit("admin:set-countdown", { seconds: countdown });
+  const toggleVote = (open: boolean) => {
+    showToast("info", open ? "ส่งคำสั่งเปิดรับโหวต" : "ส่งคำสั่งปิดรับโหวต");
+    socket?.emit("admin:toggle-vote", { open, motionId: selectedMotion });
+  };
+  const setCountdownTimer = () => {
+    showToast("info", "ตั้งเวลาแล้ว ส่งคำสั่ง...");
+    socket?.emit("admin:set-countdown", { seconds: countdown });
+  };
   const changeLoginMode = async (mode: string) => {
     await fetch("/api/admin/login-mode", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ loginMode: mode }) });
     setLoginMode(mode);
@@ -194,6 +203,7 @@ export default function Admin() {
   const toggleGeoCheck = async () => {
     const newVal = !geoCheckEnabled;
     try {
+      showToast("info", "กำลังบันทึกการตั้งค่า GPS...");
       const res = await fetch("/api/admin/login-mode", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ geoCheckEnabled: newVal }) });
       if (res.ok) {
         setGeoCheckEnabled(newVal);
@@ -207,6 +217,7 @@ export default function Admin() {
     if (!confirm("ยืนยันอีกครั้ง: คุณแน่ใจว่าต้องการรีเซ็ตข้อมูลทั้งหมด?")) return;
     setResetting(true);
     try {
+      showToast("info", "กำลังรีเซ็ตระบบ...");
       const res = await fetch("/api/admin/reset", { method: "POST" });
       const data = await res.json();
       if (res.ok) {
@@ -220,6 +231,7 @@ export default function Admin() {
   const generateCredentials = async () => {
     setGenerating(true);
     try {
+      showToast("info", "กำลังสร้างบัญชีและ QR...");
       const res = await fetch("/api/admin/generate-credentials", { method: "POST" });
       if (!res.ok) { const err = await res.json().catch(() => ({ error: "เกิดข้อผิดพลาด" })); showToast("error", err.error || "สร้างข้อมูลล็อกอินไม่สำเร็จ"); return; }
       const data = await res.json();
@@ -233,6 +245,7 @@ export default function Admin() {
   const deleteAccount = async (id: number, type: string) => {
     if (!confirm("ต้องการลบข้อมูลบัญชีนี้หรือไม่? QR Code จะถูกยกเลิกด้วย")) return;
     try {
+      showToast("info", "กำลังลบบัญชี...");
       const res = await fetch("/api/admin/accounts", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, type }) });
       if (res.ok) {
         showToast("success", "ลบบัญชีสำเร็จ");
@@ -286,7 +299,6 @@ export default function Admin() {
     for (let i = 0; i < credSchools.length; i += 2) {
       pairs.push(credSchools.slice(i, i + 2));
     }
-    const HOST_LOGO = "https://upload.wikimedia.org/wikipedia/commons/9/9f/RSL001.png";
     const cardsHtml = pairs.map((pair) =>
       `<div class="page">${pair.map((s) => {
         const url = typeof window !== "undefined" ? `${window.location.origin}/vote?token=${s.loginToken}` : "";
@@ -295,10 +307,9 @@ export default function Admin() {
           <div class="card-inner">
             <div class="gold-bar"></div>
             <div class="header-row">
-              <img src="${HOST_LOGO}" class="host-logo" />
               <div class="header-text">
-                <div class="header-title">สภานักเรียน</div>
-                <div class="header-sub">สหวิทยาเขตวชิรบูรพา</div>
+                <div class="header-title">wbp.rslhub.me</div>
+                <div class="header-sub">ระบบลงมติออนไลน์ — อบรมโครงการส่งเสริมภาวะผู้นำสภานักเรียน</div>
               </div>
             </div>
             <div class="school-section">
@@ -328,9 +339,8 @@ export default function Admin() {
   .gold-bar { height: 6px; background: linear-gradient(90deg, #daa520, #c8a24e, #b8860b); }
   .gold-bar-bottom { height: 4px; background: linear-gradient(90deg, #b8860b, #c8a24e, #daa520); }
   .header-row { display: flex; align-items: center; gap: 10px; padding: 14px 20px 8px; }
-  .host-logo { width: 36px; height: 36px; object-fit: contain; }
   .header-title { font-weight: 800; font-size: 14px; color: #2d2312; }
-  .header-sub { font-size: 10px; color: #8b6914; font-weight: 600; }
+  .header-sub { font-size: 10px; color: #8b6914; font-weight: 600; line-height: 1.35; }
   .school-section { text-align: center; padding: 8px 20px 12px; }
   .logo { width: 56px; height: 56px; object-fit: contain; margin-bottom: 6px; border-radius: 50%; border: 2px solid rgba(200,162,78,0.25); padding: 3px; background: white; }
   .name { font-weight: 700; font-size: 15px; text-align: center; color: #2d2312; line-height: 1.3; }
@@ -404,8 +414,8 @@ export default function Admin() {
       {/* Toast Notifications */}
       <div className="toast-container">
         {toasts.map((t) => (
-          <div key={t.id} className={`toast ${t.type === "success" ? "toast-success" : "toast-error"}`}>
-            {t.type === "success" ? <CheckCircle2 size={16} /> : <XCircle size={16} />}
+          <div key={t.id} className={`toast ${t.type === "success" ? "toast-success" : t.type === "info" ? "toast-info" : "toast-error"}`}>
+            {t.type === "success" ? <CheckCircle2 size={16} /> : t.type === "info" ? <Info size={16} /> : <XCircle size={16} />}
             {t.message}
           </div>
         ))}

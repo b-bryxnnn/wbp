@@ -417,6 +417,11 @@ body {
   color: #991b1b;
   border: 1px solid #fca5a5;
 }
+.toast-info {
+  background: linear-gradient(135deg, #eef2ff, #e0e7ff);
+  color: #312e81;
+  border: 1px solid #c7d2fe;
+}
 @keyframes toastIn {
   from { opacity: 0; transform: translateX(100px); }
   to { opacity: 1; transform: translateX(0); }

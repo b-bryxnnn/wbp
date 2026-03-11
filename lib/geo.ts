@@ -4,9 +4,9 @@
  * 121 ถ. เคหะร่มเกล้า แขวงคลองสองต้นนุ่น เขตลาดกระบัง กรุงเทพมหานคร 10520
  */
 
-// Approx coordinates for QP6J+5J Bangkok (RSL school)
-export const CENTER_LAT = 13.72815;
-export const CENTER_LNG = 100.79230;
+// Approx coordinates for โรงเรียนรัตนโกสินทร์สมโภชลาดกระบัง (event venue)
+export const CENTER_LAT = 13.741001;
+export const CENTER_LNG = 100.716716;
 export const MAX_RADIUS_KM = 5;
 
 function toRad(deg: number): number {
