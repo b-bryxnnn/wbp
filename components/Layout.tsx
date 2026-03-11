@@ -3,6 +3,21 @@ import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { Landmark, Settings, Vote, Monitor, ClipboardList } from "lucide-react";
+import { Sarabun, Prompt } from "next/font/google";
+
+const sarabun = Sarabun({
+  subsets: ["thai", "latin"],
+  weight: ["300", "400", "500", "600", "700", "800"],
+  display: "swap",
+  variable: "--font-sarabun",
+});
+
+const prompt = Prompt({
+  subsets: ["thai", "latin"],
+  weight: ["300", "400", "500", "600", "700"],
+  display: "swap",
+  variable: "--font-prompt",
+});
 
 const navItems = [
   { href: "/", label: "หน้าหลัก", icon: Landmark },
@@ -20,19 +35,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <Head>
         <title>ระบบโหวตลงมติ — สหวิทยาเขตวชิรบูรพา</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&family=Prompt:wght@300;400;500;600;700&display=swap"
-        />
         <link
           rel="icon"
           href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' rx='3' fill='%23c8a24e'/><text x='3' y='13' font-size='12' fill='white'>V</text></svg>"
         />
       </Head>
 
-      <div className="min-h-screen flex flex-col">
+      <div className={`min-h-screen flex flex-col ${sarabun.variable} ${prompt.variable}`}>
         {/* Top Gold Bar */}
         <div className="h-1 bg-gradient-to-r from-transparent via-gold to-transparent" />
 

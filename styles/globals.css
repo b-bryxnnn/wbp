@@ -16,7 +16,7 @@
 }
 
 body {
-  font-family: 'Sarabun', 'Prompt', 'Noto Sans Thai', sans-serif;
+  font-family: var(--font-sarabun), var(--font-prompt), 'Noto Sans Thai', sans-serif;
   background: linear-gradient(180deg, #fffdf7 0%, #fef9e7 100%);
   color: #2d2312;
   min-height: 100vh;

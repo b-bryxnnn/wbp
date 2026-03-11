@@ -6,7 +6,7 @@ services:
     ports:
       - "${APP_PORT:-4002}:3000"
     environment:
-      - DATABASE_URL=${DATABASE_URL:-postgresql://wbp_user:wbp_pass@db:5432/wbp_db}
+      - DATABASE_URL=${DATABASE_URL:-postgresql://wbp_user:wbp_pass@db:5432/wbp_db?connection_limit=5}
       - JWT_SECRET=${JWT_SECRET:-super-secret-local-key}
       - SOCKET_IO_PATH=/api/socket
     depends_on:

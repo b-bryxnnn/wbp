@@ -32,6 +32,6 @@ COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 # Copy prisma CLI so we can run db push at startup
 COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
 
-# Startup: push schema to DB → seed data → start server
+# Startup: push schema to DB → start server (seed runs in background)
 EXPOSE 3000
-CMD ["sh", "-c", "npx prisma db push --skip-generate && node prisma/seed.js && node server.js"]
+CMD ["sh", "-c", "npx prisma db push --skip-generate && (node prisma/seed.js &) && node server.js"]

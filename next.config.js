@@ -3,10 +3,8 @@ const nextConfig = {
   reactStrictMode: true,
   output: "standalone",
   swcMinify: true,
+  compress: true,
   transpilePackages: ["lucide-react"],
-  compiler: {
-    removeConsole: process.env.NODE_ENV === "production",
-  },
   modularizeImports: {
     "lucide-react": {
       transform: "lucide-react/dist/esm/icons/{{ kebabCase member }}",

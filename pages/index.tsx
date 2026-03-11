@@ -3,7 +3,7 @@ import { Landmark, Vote, Monitor, ClipboardList, Calendar, MapPin, Settings, Use
 
 const schoolLogos = [
   { name: "เตรียมอุดมฯ สุวรรณภูมิ", url: "https://upload.wikimedia.org/wikipedia/commons/4/47/Phra_Kiao_Triamnom_Colored.png" },
-  { name: "นวมินทราชินูทิศ เตรียมอุดมฯ น้อมเกล้า", url: "http://fth1.com/uppic/10106510/news/10106510_0_20231130-104017.jpg" },
+  { name: "นวมินทราชินูทิศ เตรียมอุดมฯ น้อมเกล้า", url: "https://fth1.com/uppic/10106510/news/10106510_0_20231130-104017.jpg" },
   { name: "พรตพิทยพยัต", url: "https://prot.ac.th/_files_school/10105750/workstudent/10105750_0_20151212-184742.png" },
   { name: "รัตนโกสินทร์สมโภชลาดกระบัง", url: "https://upload.wikimedia.org/wikipedia/commons/9/9f/RSL001.png" },
   { name: "บดินทรเดชา 4", url: "https://upload.wikimedia.org/wikipedia/th/thumb/f/fc/%E0%B8%95%E0%B8%A3%E0%B8%B2%E0%B8%9E%E0%B8%A3%E0%B8%B0%E0%B9%80%E0%B8%81%E0%B8%B5%E0%B9%89%E0%B8%A2%E0%B8%A7_%E0%B8%9A.%E0%B8%94.%E0%B9%94.png/250px-%E0%B8%95%E0%B8%A3%E0%B8%B2%E0%B8%9E%E0%B8%A3%E0%B8%B0%E0%B9%80%E0%B8%81%E0%B8%B5%E0%B9%89%E0%B8%A2%E0%B8%A7_%E0%B8%9A.%E0%B8%94.%E0%B9%94.png" },
@@ -73,6 +73,7 @@ export default function Home() {
 									<img
 										src={s.url}
 										alt={s.name}
+										loading="lazy"
 										className="school-avatar-lg"
 									/>
 									<span className="text-xs text-royal-400 text-center whitespace-nowrap max-w-[90px] truncate">
