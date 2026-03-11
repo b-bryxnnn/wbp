@@ -130,13 +130,15 @@ export default function Admin() {
   useEffect(() => {
     if (!authed) return;
     fetch("/api/socket").then(() => {
-      const s = io({ path: "/api/socket", transports: ["polling"] });
+      const s = io({ path: "/api/socket", transports: ["websocket", "polling"] });
       setSocket(s);
       s.on("state:update", (data: State) => setState(data));
       // Listen for action results
       s.on("admin:action-result", (data: { success: boolean; action: string; detail?: string }) => {
         showToast(data.success ? "success" : "error", data.action + (data.detail ? ` — ${data.detail}` : ""));
       });
+      s.io.on("error", () => showToast("error", "เชื่อมต่อเซิร์ฟเวอร์ไม่ได้"));
+      s.on("connect_error", () => showToast("error", "เชื่อมต่อเซิร์ฟเวอร์ไม่ได้"));
     });
   }, [authed, showToast]);
 

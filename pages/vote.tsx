@@ -107,7 +107,7 @@ export default function VotePage() {
   // Setup socket connection
   useEffect(() => {
     fetch("/api/socket").then(() => {
-      const s = io({ path: "/api/socket", transports: ["polling"] });
+      const s = io({ path: "/api/socket", transports: ["websocket", "polling"] });
       setSocket(s);
       s.on("state:update", (data: State) => { setState(data); setVoted(null); setStateLoaded(true); });
       s.on("session:invalid", (data: { reason: string }) => {
@@ -115,6 +115,8 @@ export default function VotePage() {
         setAuthToken(null); setSessionToken(null); setSchoolId(""); setVoter("");
         localStorage.removeItem("auth_token"); localStorage.removeItem("session_token");
       });
+      s.io.on("error", () => pushToast("error", "เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ ลองรีเฟรชหรือตรวจสอบอินเทอร์เน็ต"));
+      s.on("connect_error", () => pushToast("error", "เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ ลองรีเฟรช"));
       return () => { s.disconnect(); };
     });
   }, []);

@@ -124,7 +124,8 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     const io = new Server((res.socket as any).server, {
       path: "/api/socket",
       addTrailingSlash: false,
-      transports: ["polling"],
+      transports: ["websocket", "polling"],
+      allowEIO3: true,
       cors: { origin: "*", methods: ["GET", "POST"] },
       cookie: false,
       pingTimeout: 60000,
