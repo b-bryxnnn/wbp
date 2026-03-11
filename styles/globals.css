@@ -503,6 +503,26 @@ body {
   padding: 10px;
 }
 
+/* LED logo badges — consistent sizing */
+.led-logo {
+  width: 106px;
+  height: 106px;
+  border-radius: 18px;
+  border: 2px solid rgba(200,162,78,0.32);
+  background: linear-gradient(180deg, #ffffff 0%, #fff7e6 100%);
+  box-shadow: 0 10px 28px rgba(0,0,0,0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  overflow: hidden;
+}
+.led-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
 /* Closed screen message */
 .closed-overlay {
   position: fixed;

@@ -319,9 +319,9 @@ export default function Admin() {
               <div class="name">${s.name}</div>
             </div>
             <div class="qr-frame">
-              <div class="qr"><img src="https://api.qrserver.com/v1/create-qr-code/?size=360x360&data=${encodeURIComponent(url)}&color=2d2312" width="280" height="280" /></div>
+              <div class="qr"><img src="https://api.qrserver.com/v1/create-qr-code/?size=420x420&data=${encodeURIComponent(url)}&color=2d2312" width="340" height="340" /></div>
             </div>
-            <div class="scan-text">📱 สแกน QR Code เพื่อเข้าสู่ระบบลงมติ</div>
+            <div class="scan-text">สแกน QR CODE เพื่อเข้าสู่ระบบลงมติ</div>
             <div class="url">${url}</div>
             <div class="gold-bar-bottom"></div>
           </div>
@@ -337,19 +337,19 @@ export default function Admin() {
   body { font-family: 'Sarabun', sans-serif; color: #2d2312; }
   .page { display: flex; width: 100%; height: 100vh; page-break-after: always; gap: 16px; padding: 6px; }
   .half { width: 50%; display: flex; align-items: center; justify-content: center; }
-  .card-inner { width: 100%; max-width: 520px; min-height: 360px; border: 3px solid #c8a24e; border-radius: 22px; padding: 0; overflow: hidden; background: #fffdf7; position: relative; box-shadow: 0 12px 40px rgba(0,0,0,0.08); }
-  .gold-bar { height: 6px; background: linear-gradient(90deg, #daa520, #c8a24e, #b8860b); }
-  .gold-bar-bottom { height: 4px; background: linear-gradient(90deg, #b8860b, #c8a24e, #daa520); }
-  .header-row { display: flex; align-items: center; gap: 12px; padding: 18px 24px 10px; }
-  .header-title { font-weight: 800; font-size: 14px; color: #2d2312; }
-  .header-sub { font-size: 11px; color: #8b6914; font-weight: 700; line-height: 1.45; }
-  .school-section { text-align: center; padding: 12px 24px 14px; }
-  .logo { width: 78px; height: 78px; object-fit: contain; margin-bottom: 10px; border-radius: 50%; border: 2px solid rgba(200,162,78,0.25); padding: 4px; background: white; }
-  .name { font-weight: 800; font-size: 17px; text-align: center; color: #2d2312; line-height: 1.35; }
-  .qr-frame { display: flex; justify-content: center; padding: 0 28px 16px; }
-  .qr { background: white; padding: 14px; border-radius: 18px; border: 2px solid rgba(200,162,78,0.24); box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
-  .scan-text { text-align: center; font-size: 13px; color: #8b6914; font-weight: 800; padding: 0 24px 6px; letter-spacing: 0.01em; }
-  .url { font-size: 8px; color: #9c8b68; word-break: break-all; text-align: center; padding: 0 24px 16px; max-width: 420px; margin: 0 auto; }
+  .card-inner { width: 100%; max-width: 620px; min-height: 460px; border: 3px solid #c8a24e; border-radius: 26px; padding: 0; overflow: hidden; background: linear-gradient(180deg, #fffefb 0%, #f9f2e5 100%); position: relative; box-shadow: 0 16px 50px rgba(0,0,0,0.1); }
+  .gold-bar { height: 6px; background: linear-gradient(90deg, #d5af53, #c8a24e, #b8860b); }
+  .gold-bar-bottom { height: 4px; background: linear-gradient(90deg, #b8860b, #c8a24e, #d5af53); }
+  .header-row { display: flex; align-items: center; gap: 12px; padding: 22px 28px 12px; }
+  .header-title { font-weight: 800; font-size: 14px; color: #2d2312; letter-spacing: 0.05em; text-transform: uppercase; }
+  .header-sub { font-size: 11px; color: #7a5f38; font-weight: 700; line-height: 1.5; }
+  .school-section { text-align: center; padding: 16px 30px 18px; }
+  .logo { width: 96px; height: 96px; object-fit: contain; margin-bottom: 14px; border-radius: 18px; border: 2px solid rgba(200,162,78,0.28); padding: 6px; background: white; box-shadow: 0 6px 18px rgba(0,0,0,0.06); }
+  .name { font-weight: 800; font-size: 19px; text-align: center; color: #2d2312; line-height: 1.35; }
+  .qr-frame { display: flex; justify-content: center; padding: 0 36px 18px; }
+  .qr { background: white; padding: 18px; border-radius: 22px; border: 2px solid rgba(200,162,78,0.24); box-shadow: 0 6px 24px rgba(0,0,0,0.1); }
+  .scan-text { text-align: center; font-size: 13px; color: #7a5f38; font-weight: 800; padding: 0 24px 6px; letter-spacing: 0.02em; text-transform: uppercase; }
+  .url { font-size: 8px; color: #836c43; word-break: break-all; text-align: center; padding: 0 24px 16px; max-width: 420px; margin: 0 auto; letter-spacing: 0.01em; }
 </style></head><body>${cardsHtml}</body></html>`);
     w.document.close(); w.focus(); setTimeout(() => { w.print(); }, 1200);
   };

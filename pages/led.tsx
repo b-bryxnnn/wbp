@@ -74,71 +74,71 @@ export default function LedScreen() {
   const totalVotes = allowedChoices.reduce((sum, k) => sum + (votes[k] || 0), 0);
   const displayMessage = liveMessage || state.bigScreenMessage || "ยินดีต้อนรับ";
 
-  // Completed motions (have votes, not currently active)
-  const completedMotions = state.motions.filter((m) => {
-    const v = state.votes[m.id];
-    if (!v) return false;
-    const total = Object.values(v).reduce((s: number, n: any) => s + (n || 0), 0);
-    return total > 0 && m.id !== state.activeMotionId;
-  });
+  const logos = [{ id: -1, name: "โรงเรียนเจ้าภาพ", logoUrl: HOST_LOGO }, ...state.schools];
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: "linear-gradient(135deg, #1a1207 0%, #2d2312 50%, #1a1207 100%)", fontFamily: "var(--font-sarabun), var(--font-prompt), sans-serif" }}>
-      {/* Header bar */}
-      <div className="h-2 bg-gradient-to-r from-transparent via-[#c8a24e] to-transparent" />
+    <div className="min-h-screen flex flex-col" style={{ background: "linear-gradient(180deg, #fffdfa 0%, #f3ebdc 55%, #fffdfa 100%)", fontFamily: "var(--font-sarabun), var(--font-prompt), sans-serif" }}>
+      <div className="h-1 bg-gradient-to-r from-transparent via-[#c8a24e] to-transparent" />
 
-      <div className="flex-1 flex flex-col p-6 md:p-10">
-        {/* Top: Logo row — only host school logo, no text */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-4">
-            <img src={HOST_LOGO} alt="ตราโรงเรียน" className="w-20 h-20 md:w-24 md:h-24 object-contain drop-shadow-lg" />
+      <div className="flex-1 flex flex-col gap-6 p-4 md:p-8">
+        {/* Logos at the very top */}
+        <div className="card-glass">
+          <div className="led-logo-strip">
+            {logos.map((s) => (
+              <div key={s.id} className="led-logo" title={s.name}>
+                {s.logoUrl ? (
+                  <img src={s.logoUrl.replace(/^http:\/\//i, "https://")} alt={s.name} />
+                ) : (
+                  <School size={28} className="text-gold-600" />
+                )}
+              </div>
+            ))}
           </div>
+        </div>
+
+        {/* Status banner */}
+        <div className="card-royal flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             {state.votingOpen ? (
-              <span className="bg-green-900/50 text-green-400 border border-green-700 px-8 py-3 rounded-full text-xl font-bold flex items-center gap-3">
-                <span className="w-4 h-4 rounded-full bg-green-400 animate-pulse" /> เปิดรับโหวต
+              <span className="bg-green-50 text-green-800 border border-green-200 px-6 py-3 rounded-full text-lg font-bold flex items-center gap-3">
+                <span className="w-3 h-3 rounded-full bg-green-500 animate-pulse" /> เปิดรับโหวต
               </span>
             ) : (
-              <span className="bg-red-900/30 text-red-400 border border-red-800 px-8 py-3 rounded-full text-xl font-bold flex items-center gap-3">
-                <span className="w-4 h-4 rounded-full bg-red-500" /> ปิดรับโหวต
+              <span className="bg-red-50 text-red-800 border border-red-200 px-6 py-3 rounded-full text-lg font-bold flex items-center gap-3">
+                <span className="w-3 h-3 rounded-full bg-red-500" /> ปิดรับโหวต
               </span>
             )}
+            {state.countdownEnd && state.votingOpen && (
+              <div className="text-royal-500 font-semibold hidden md:block">กำลังนับเวลาถอยหลัง</div>
+            )}
+          </div>
+          <div className="flex items-center gap-2 text-royal-500">
+            <Megaphone size={18} className="text-gold-600" />
+            <span className="font-semibold">{displayMessage}</span>
           </div>
         </div>
 
-        {/* Announcement banner */}
-        <div className="bg-[#2d2312]/80 border border-[#c8a24e]/30 rounded-2xl px-8 py-6 mb-8 text-center">
-          <div className="text-3xl md:text-5xl font-bold text-[#c8a24e] flex items-center justify-center gap-4">
-            <Megaphone size={36} className="flex-shrink-0" /> {displayMessage}
-          </div>
-        </div>
-
-        {/* Main content area */}
         <div className="flex-1 flex flex-col justify-center">
           {!state.votingOpen ? (
-            <div className="flex flex-col items-center justify-center text-center min-h-[60vh]">
-              <div className="w-40 h-40 rounded-full bg-black/20 border border-[#c8a24e]/40 flex items-center justify-center mb-8">
-                <Inbox size={96} className="text-[#c8a24e]" />
-              </div>
-              <div className="text-5xl md:text-6xl font-extrabold text-white mb-3">ปิดรับโหวต</div>
-              <div className="text-2xl md:text-3xl text-[#c8a24e] max-w-4xl leading-relaxed">
-                {displayMessage || "โปรดรอการเปิดโหวตรอบถัดไป"}
+            <div className="closed-overlay">
+              <div>
+                <div className="text-4xl md:text-5xl font-extrabold text-royal-900 mb-2">ปิดรับโหวต</div>
+                <div className="text-xl md:text-2xl text-royal-600 max-w-3xl mx-auto leading-relaxed">
+                  {displayMessage || "โปรดรอผู้ดูแลระบบเปิดรอบถัดไป"}
+                </div>
               </div>
             </div>
           ) : activeMotion ? (
             <div className="space-y-8">
-              {/* Motion title */}
               <div className="text-center">
-                <h2 className="text-5xl md:text-7xl font-extrabold text-white mb-4">{activeMotion.title}</h2>
+                <h2 className="text-4xl md:text-6xl font-extrabold text-royal-900 mb-3">{activeMotion.title}</h2>
                 {activeMotion.description && (
-                  <p className="text-[#c8a24e] text-xl md:text-3xl">{activeMotion.description}</p>
+                  <p className="text-gold-700 text-xl md:text-3xl">{activeMotion.description}</p>
                 )}
               </div>
 
-              {/* Countdown */}
               <CountdownTimer endTime={state.countdownEnd} />
 
-              {/* Vote results */}
               {(state.votingOpen || totalVotes > 0) && (
                 <div className={`grid gap-5 max-w-5xl mx-auto w-full`} style={{ gridTemplateColumns: `repeat(${allowedChoices.length}, minmax(0, 1fr))` }}>
                   {allowedChoices.map((key) => {
@@ -147,15 +147,14 @@ export default function LedScreen() {
                     const count = votes[key] || 0;
                     const percent = totalVotes ? Math.round((count / totalVotes) * 100) : 0;
                     return (
-                      <div key={key} className={`bg-black/30 border ${meta.border}/40 rounded-2xl p-8 md:p-10 text-center`}>
+                      <div key={key} className={`bg-white/90 border ${meta.border}/30 rounded-2xl p-8 md:p-10 text-center shadow-card`}> 
                         <meta.Icon size={44} className={`mx-auto mb-4 ${meta.text}`} />
                         <div className={`text-xl font-bold ${meta.text} mb-3`}>{meta.label}</div>
                         <div className={`text-8xl md:text-9xl font-extrabold ${meta.text} font-mono`}>{count}</div>
-                        {/* Progress bar */}
-                        <div className="mt-5 h-4 rounded-full bg-white/10 overflow-hidden">
+                        <div className="mt-5 h-4 rounded-full bg-royal-100 overflow-hidden">
                           <div className={`h-full rounded-full bg-gradient-to-r ${meta.color} transition-all duration-700`} style={{ width: `${percent}%` }} />
                         </div>
-                        <div className="text-base text-[#8b7a52] mt-3 font-semibold">{percent}%</div>
+                        <div className="text-base text-royal-500 mt-3 font-semibold">{percent}%</div>
                       </div>
                     );
                   })}
@@ -163,41 +162,23 @@ export default function LedScreen() {
               )}
 
               {totalVotes > 0 && (
-                <div className="text-center text-[#c8a24e] text-xl">
-                  รวมทั้งหมด: <span className="text-white font-bold text-3xl">{totalVotes}</span> เสียง
+                <div className="text-center text-royal-700 text-xl">
+                  รวมทั้งหมด: <span className="text-royal-900 font-bold text-3xl">{totalVotes}</span> เสียง
                 </div>
               )}
             </div>
           ) : (
             <div className="text-center">
-              <div className="w-36 h-36 rounded-full bg-[#c8a24e]/10 flex items-center justify-center mx-auto mb-8">
-                <Inbox size={72} className="text-[#8b7a52]" />
+              <div className="w-36 h-36 rounded-full bg-gold/10 flex items-center justify-center mx-auto mb-8">
+                <Inbox size={72} className="text-gold-600" />
               </div>
-              <div className="text-3xl text-[#8b7a52]">รอดำเนินการ</div>
+              <div className="text-3xl text-royal-600">รอดำเนินการ</div>
             </div>
           )}
         </div>
-
-        {/* Bottom: School logos — no frames, no names */}
-        <div className="mt-8 pt-6 border-t border-[#c8a24e]/15">
-          <div className="flex flex-wrap items-center justify-center gap-5">
-            {state.schools.map((s) => (
-              <div key={s.id} title={s.name}>
-                {s.logoUrl ? (
-                  <img src={s.logoUrl.replace(/^http:\/\//i, "https://")} alt={s.name} className="w-14 h-14 md:w-16 md:h-16 object-contain drop-shadow-md" />
-                ) : (
-                  <div className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-[#c8a24e]/10 flex items-center justify-center">
-                    <School size={24} className="text-[#8b7a52]" />
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
       </div>
 
-      {/* Bottom bar */}
-      <div className="h-2 bg-gradient-to-r from-transparent via-[#c8a24e] to-transparent" />
+      <div className="h-1 bg-gradient-to-r from-transparent via-[#c8a24e] to-transparent" />
     </div>
   );
 }
