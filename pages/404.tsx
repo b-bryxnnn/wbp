@@ -1,13 +1,18 @@
-import React from 'react';
-import { useRouter } from 'next/router';
+import React from "react";
+import Link from "next/link";
 
 export default function NotFound() {
-  const router = useRouter();
   return (
-    <div className="min-h-screen bg-darkblue text-gold flex flex-col items-center justify-center">
-      <h2 className="text-3xl font-bold mb-4">ไม่พบหน้าที่ต้องการ</h2>
-      <button className="px-6 py-3 bg-gold text-darkblue rounded-lg font-semibold shadow-lg hover:bg-yellow-400 transition" onClick={() => router.push('/')}>กลับหน้าหลัก</button>
+    <div className="animate-fade-in flex flex-col items-center justify-center py-24 px-4 text-center">
+      <div className="text-7xl mb-4">🏛</div>
+      <h2 className="text-4xl font-extrabold text-royal-900 mb-2">404</h2>
+      <p className="text-lg text-royal-400 mb-8">ไม่พบหน้าที่ต้องการ</p>
+      <div className="ornament-divider max-w-xs mx-auto mb-8">
+        <div className="diamond" />
+      </div>
+      <Link href="/" className="btn-gold text-lg px-8 py-3">
+        🏠 กลับหน้าหลัก
+      </Link>
     </div>
   );
 }
-

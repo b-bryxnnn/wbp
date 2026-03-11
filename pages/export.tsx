@@ -1,14 +1,22 @@
-
 export default function Export() {
   return (
-    <div className="min-h-screen bg-darkblue text-gold flex flex-col items-center justify-center">
-      <h2 className="text-3xl font-bold mb-4">ออกรายงาน/Export</h2>
-      <div className="bg-graydark p-8 rounded-lg shadow-lg w-full max-w-xl">
-        {/* ปุ่ม Export PDF/Excel */}
-        <button className="px-6 py-3 bg-gold text-darkblue rounded-lg font-semibold shadow-lg hover:bg-yellow-400 transition mb-4">Export PDF</button>
-        <button className="px-6 py-3 bg-gold text-darkblue rounded-lg font-semibold shadow-lg hover:bg-yellow-400 transition">Export Excel</button>
+    <div className="animate-fade-in max-w-xl mx-auto px-4 py-8">
+      <div className="text-center mb-8">
+        <h2 className="text-3xl font-extrabold text-royal-900">📊 ออกรายงาน</h2>
+        <div className="ornament-divider max-w-xs mx-auto mt-2">
+          <div className="diamond" />
+        </div>
+      </div>
+
+      <div className="card-royal space-y-4">
+        <p className="text-sm text-royal-400 text-center">เลือกรูปแบบการส่งออกข้อมูล</p>
+        <a href="/api/export?type=pdf" className="btn-gold w-full text-center block py-4 text-lg">
+          📄 Export PDF
+        </a>
+        <a href="/api/export?type=excel" className="btn-outline-gold w-full text-center block py-4 text-lg">
+          📊 Export Excel
+        </a>
       </div>
     </div>
   );
 }
-

@@ -61,95 +61,210 @@ export default function Admin() {
   const presentSchools = Object.values(state.attendance).filter(Boolean).length;
 
   return (
-    <div className="min-h-screen bg-darkblue text-gold flex flex-col items-center py-10 px-4">
-      <h2 className="text-3xl font-bold mb-4">หน้าผู้ดูแลระบบ</h2>
-      <div className="grid gap-6 w-full max-w-5xl">
+    <div className="animate-fade-in max-w-6xl mx-auto px-4 py-8">
+      {/* Page Header */}
+      <div className="text-center mb-8">
+        <h2 className="text-3xl font-extrabold text-royal-900">⚙️ หน้าผู้ดูแลระบบ</h2>
+        <div className="ornament-divider max-w-xs mx-auto mt-2">
+          <div className="diamond" />
+        </div>
+        <div className="flex justify-center gap-3 mt-4">
+          <span className={state.votingOpen ? "badge-success" : "badge-danger"}>
+            {state.votingOpen ? "🟢 เปิดรับโหวต" : "🔴 ปิดรับโหวต"}
+          </span>
+          <span className="badge-gold">
+            🏫 องค์ประชุม {presentSchools}/{totalSchools}
+          </span>
+        </div>
+      </div>
 
-        <section className="bg-graydark p-6 rounded-lg shadow-lg">
-          <h3 className="text-xl font-semibold mb-3">ควบคุมหน้าจอใหญ่</h3>
-          <textarea className="w-full bg-darkblue text-gold p-3 rounded mb-3" rows={3} value={message} onChange={(e) => setMessage(e.target.value)} />
-          <button className="px-4 py-2 bg-gold text-darkblue rounded font-semibold" onClick={sendMessage}>อัปเดตข้อความจอใหญ่</button>
-        </section>
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* ===== ควบคุมหน้าจอใหญ่ ===== */}
+        <div className="card-royal">
+          <h3 className="section-title mb-4">📺 ควบคุมหน้าจอใหญ่</h3>
+          <textarea
+            className="input-royal mb-3"
+            rows={3}
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder="พิมพ์ข้อความที่ต้องการแสดงบนจอใหญ่..."
+          />
+          <button className="btn-gold w-full" onClick={sendMessage}>
+            📡 อัปเดตข้อความจอใหญ่
+          </button>
+        </div>
 
-        <section className="bg-graydark p-6 rounded-lg shadow-lg grid gap-3">
-          <h3 className="text-xl font-semibold">จัดการญัตติ/มติ</h3>
-          <input className="w-full bg-darkblue text-gold p-3 rounded" placeholder="ชื่อญัตติ" value={motionTitle} onChange={(e) => setMotionTitle(e.target.value)} />
-          <textarea className="w-full bg-darkblue text-gold p-3 rounded" placeholder="คำอธิบาย" rows={2} value={motionDescription} onChange={(e) => setMotionDescription(e.target.value)} />
-          <button className="px-4 py-2 bg-gold text-darkblue rounded font-semibold" onClick={addMotion}>เพิ่มญัตติ</button>
-          <div className="mt-4">
-            <label className="block mb-2">เลือกญัตติสำหรับการโหวต</label>
-            <select className="w-full bg-darkblue text-gold p-3 rounded" value={selectedMotion ?? ""} onChange={(e) => setSelectedMotion(e.target.value ? Number(e.target.value) : null)}>
-              <option value="">-- เลือกญัตติ --</option>
-              {state.motions.map((m) => (<option key={m.id} value={m.id}>{m.title}</option>))}
-            </select>
-          </div>
-          <div className="flex gap-3 flex-wrap mt-2">
-            <button className="px-4 py-2 bg-green-600 text-white rounded font-semibold" onClick={() => toggleVote(true)}>เปิดรับโหวต</button>
-            <button className="px-4 py-2 bg-red-600 text-white rounded font-semibold" onClick={() => toggleVote(false)}>ปิดรับโหวต</button>
-            <input type="number" className="bg-darkblue text-gold p-2 rounded w-24" value={countdown} onChange={(e) => setCountdown(Number(e.target.value))} />
-            <button className="px-4 py-2 bg-yellow-600 text-darkblue rounded font-semibold" onClick={setCountdownTimer}>ตั้ง Countdown</button>
-          </div>
-          <div className="text-sm mt-2">สถานะ: {state.votingOpen ? "🟢 เปิดรับโหวต" : "🔴 ปิดรับโหวต"} | ญัตติ: {state.activeMotionId ?? "-"}</div>
-        </section>
-
-        <section className="bg-graydark p-6 rounded-lg shadow-lg grid gap-3">
-          <h3 className="text-xl font-semibold">เช็คชื่อแบบสด</h3>
-          <div className="flex gap-3 items-center flex-wrap">
-            <select className="bg-darkblue text-gold p-3 rounded" value={checkInSchool} onChange={(e) => setCheckInSchool(e.target.value ? Number(e.target.value) : "")}>
+        {/* ===== เช็คชื่อแบบสด ===== */}
+        <div className="card-royal">
+          <h3 className="section-title mb-4">📋 เช็คชื่อแบบสด</h3>
+          <div className="flex gap-3 items-center flex-wrap mb-4">
+            <select
+              className="input-royal flex-1"
+              value={checkInSchool}
+              onChange={(e) => setCheckInSchool(e.target.value ? Number(e.target.value) : "")}
+            >
               <option value="">-- เลือกโรงเรียน --</option>
-              {state.schools.map((s) => (<option key={s.id} value={s.id}>{s.name}</option>))}
+              {state.schools.map((s) => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
             </select>
-            <button className="px-4 py-2 bg-gold text-darkblue rounded font-semibold" onClick={checkIn}>เช็คชื่อเข้า</button>
-            <span className="text-sm text-gold/80">เข้าร่วมแล้ว: {presentSchools}/{totalSchools} โรงเรียน</span>
+            <button className="btn-gold whitespace-nowrap" onClick={checkIn}>
+              ✅ เช็คชื่อ
+            </button>
           </div>
           <div className="grid grid-cols-2 gap-2 text-sm">
             {state.schools.map((s) => (
-              <div key={s.id} className={`p-2 rounded ${state.attendance[s.id] ? "bg-green-700" : "bg-darkblue"}`}>
-                {s.name} {state.attendance[s.id] ? "✅" : "⬜"}
+              <div
+                key={s.id}
+                className={`p-2.5 rounded-lg border text-center font-medium transition-all ${
+                  state.attendance[s.id]
+                    ? "bg-green-50 border-green-300 text-green-800"
+                    : "bg-white border-gold/20 text-royal-400"
+                }`}
+              >
+                {state.attendance[s.id] ? "✅" : "⬜"} {s.name}
               </div>
             ))}
           </div>
-        </section>
+        </div>
 
-        <section className="bg-graydark p-6 rounded-lg shadow-lg grid gap-3">
-          <h3 className="text-xl font-semibold">QR เข้าสู่ระบบ (ต่อโรงเรียน)</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* ===== จัดการญัตติ (full width) ===== */}
+        <div className="card-royal lg:col-span-2">
+          <h3 className="section-title mb-4">🗳 จัดการญัตติ/มติ</h3>
+          <div className="grid md:grid-cols-2 gap-4 mb-4">
+            <div className="space-y-3">
+              <input
+                className="input-royal"
+                placeholder="ชื่อญัตติ"
+                value={motionTitle}
+                onChange={(e) => setMotionTitle(e.target.value)}
+              />
+              <textarea
+                className="input-royal"
+                placeholder="คำอธิบาย"
+                rows={2}
+                value={motionDescription}
+                onChange={(e) => setMotionDescription(e.target.value)}
+              />
+              <button className="btn-gold w-full" onClick={addMotion}>
+                ➕ เพิ่มญัตติ
+              </button>
+            </div>
+            <div className="space-y-3">
+              <label className="text-sm font-semibold text-royal-600">เลือกญัตติสำหรับการโหวต</label>
+              <select
+                className="input-royal"
+                value={selectedMotion ?? ""}
+                onChange={(e) => setSelectedMotion(e.target.value ? Number(e.target.value) : null)}
+              >
+                <option value="">-- เลือกญัตติ --</option>
+                {state.motions.map((m) => (
+                  <option key={m.id} value={m.id}>{m.title}</option>
+                ))}
+              </select>
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  className="px-3 py-2.5 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-all text-sm shadow-sm"
+                  onClick={() => toggleVote(true)}
+                >
+                  🟢 เปิดโหวต
+                </button>
+                <button
+                  className="px-3 py-2.5 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition-all text-sm shadow-sm"
+                  onClick={() => toggleVote(false)}
+                >
+                  🔴 ปิดโหวต
+                </button>
+                <button
+                  className="px-3 py-2.5 bg-gold-600 text-white rounded-lg font-semibold hover:bg-gold-700 transition-all text-sm shadow-sm"
+                  onClick={setCountdownTimer}
+                >
+                  ⏱ Countdown
+                </button>
+              </div>
+              <div className="flex items-center gap-2">
+                <label className="text-sm text-royal-500 whitespace-nowrap">ตั้งเวลา:</label>
+                <input
+                  type="number"
+                  className="input-royal w-24"
+                  value={countdown}
+                  onChange={(e) => setCountdown(Number(e.target.value))}
+                />
+                <span className="text-sm text-royal-400">วินาที</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Motions list */}
+          {state.motions.length > 0 && (
+            <div className="border-t border-gold/20 pt-4 mt-2">
+              <p className="text-sm font-semibold text-royal-500 mb-2">ญัตติทั้งหมด ({state.motions.length})</p>
+              <div className="space-y-2 max-h-40 overflow-y-auto">
+                {state.motions.map((m) => {
+                  const v = state.votes[m.id] || { AGREE: 0, DISAGREE: 0, ABSTAIN: 0 };
+                  return (
+                    <div key={m.id} className={`flex items-center justify-between p-3 rounded-lg border text-sm ${
+                      state.activeMotionId === m.id ? "bg-gold-50 border-gold" : "bg-white border-gold/10"
+                    }`}>
+                      <div>
+                        <span className="font-semibold text-royal-800">{m.title}</span>
+                        {state.activeMotionId === m.id && <span className="ml-2 badge-gold text-xs">กำลังใช้งาน</span>}
+                      </div>
+                      <div className="flex gap-3 text-xs text-royal-500">
+                        <span className="text-green-600">👍 {v.AGREE}</span>
+                        <span className="text-red-600">👎 {v.DISAGREE}</span>
+                        <span className="text-yellow-600">🤚 {v.ABSTAIN}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* ===== QR Code ===== */}
+        <div className="card-royal lg:col-span-2">
+          <h3 className="section-title mb-4">📱 QR เข้าสู่ระบบ (ต่อโรงเรียน)</h3>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {schools.map((s) => {
               const url = typeof window !== "undefined" ? `${window.location.origin}/vote?token=${s.loginToken}` : "";
               return (
-                <div key={s.id} className="p-3 bg-darkblue rounded text-center space-y-2">
-                  <div className="font-semibold">{s.name}</div>
-                  <QRCode value={url || "loading"} bgColor="#0a1a2f" fgColor="#ffd700" size={140} />
-                  <div className="text-xs break-all text-gold/70">{url}</div>
+                <div key={s.id} className="bg-white rounded-xl border border-gold/20 p-4 text-center space-y-2 hover:shadow-elegant transition-shadow">
+                  <div className="font-semibold text-sm text-royal-700">{s.name}</div>
+                  <div className="flex justify-center">
+                    <QRCode value={url || "loading"} bgColor="#ffffff" fgColor="#2d2312" size={120} />
+                  </div>
+                  <div className="text-[10px] break-all text-royal-300">{url}</div>
                 </div>
               );
             })}
           </div>
-        </section>
+        </div>
 
-        <section className="bg-graydark p-6 rounded-lg shadow-lg grid gap-3">
-          <h3 className="text-xl font-semibold">ออกรายงาน</h3>
+        {/* ===== Export ===== */}
+        <div className="card-royal">
+          <h3 className="section-title mb-4">📊 ออกรายงาน</h3>
           <div className="flex gap-3">
-            <a href="/api/export?type=pdf" className="px-4 py-2 bg-gold text-darkblue rounded font-semibold">Export PDF</a>
-            <a href="/api/export?type=excel" className="px-4 py-2 bg-gold text-darkblue rounded font-semibold">Export Excel</a>
+            <a href="/api/export?type=pdf" className="btn-gold flex-1 text-center">📄 Export PDF</a>
+            <a href="/api/export?type=excel" className="btn-outline-gold flex-1 text-center">📊 Export Excel</a>
           </div>
-        </section>
+        </div>
 
-        <section className="bg-graydark p-6 rounded-lg shadow-lg grid gap-2">
-          <h3 className="text-xl font-semibold">บันทึกการทำงาน (Audit Log)</h3>
-          <div className="max-h-48 overflow-y-auto text-sm space-y-1">
+        {/* ===== Audit Log ===== */}
+        <div className="card-royal">
+          <h3 className="section-title mb-4">📜 บันทึกการทำงาน</h3>
+          <div className="max-h-48 overflow-y-auto space-y-1.5">
             {state.auditLogs.map((log, idx) => (
-              <div key={idx} className="flex justify-between bg-darkblue p-2 rounded">
-                <span>{log.action} {log.detail ? `- ${log.detail}` : ""}</span>
-                <span className="text-gold/70">{new Date(log.at).toLocaleTimeString()}</span>
+              <div key={idx} className="flex justify-between bg-cream-50 border border-gold/10 p-2.5 rounded-lg text-sm">
+                <span className="text-royal-700">{log.action} {log.detail ? `— ${log.detail}` : ""}</span>
+                <span className="text-royal-300 text-xs whitespace-nowrap ml-2">{new Date(log.at).toLocaleTimeString()}</span>
               </div>
             ))}
-            {state.auditLogs.length === 0 && <div>ยังไม่มีบันทึก</div>}
+            {state.auditLogs.length === 0 && <div className="text-royal-300 text-sm text-center py-4">ยังไม่มีบันทึก</div>}
           </div>
-        </section>
-
+        </div>
       </div>
     </div>
   );
 }
-

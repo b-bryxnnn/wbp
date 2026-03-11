@@ -2,8 +2,216 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  background-color: #0a1a2f;
-  color: #ffd700;
+@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&family=Prompt:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --gold-primary: #c8a24e;
+  --gold-light: #f0deb0;
+  --gold-dark: #8b6914;
+  --cream: #fef9e7;
+  --cream-dark: #f5e6b8;
+  --royal-dark: #2d2312;
 }
 
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Sarabun', 'Prompt', 'Noto Sans Thai', sans-serif;
+  background: linear-gradient(180deg, #fffdf7 0%, #fef3d0 40%, #f5e6b8 100%);
+  color: #2d2312;
+  min-height: 100vh;
+}
+
+/* ===== Ornamental Divider ===== */
+.ornament-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 1rem 0;
+}
+.ornament-divider::before,
+.ornament-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #c8a24e, transparent);
+}
+.ornament-divider .diamond {
+  width: 8px;
+  height: 8px;
+  background: #c8a24e;
+  transform: rotate(45deg);
+  flex-shrink: 0;
+}
+
+/* ===== Gold Border Top on Cards ===== */
+.card-royal {
+  background: linear-gradient(135deg, #ffffff 0%, #fefbf0 100%);
+  border: 1px solid rgba(200, 162, 78, 0.25);
+  border-top: 3px solid #c8a24e;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 15px rgba(0,0,0,0.06), 0 4px 12px rgba(200,162,78,0.08);
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
+}
+.card-royal:hover {
+  box-shadow: 0 8px 30px rgba(0,0,0,0.1), 0 4px 20px rgba(200,162,78,0.15);
+  transform: translateY(-2px);
+}
+
+/* ===== Buttons ===== */
+.btn-gold {
+  background: linear-gradient(135deg, #daa520 0%, #c8a24e 50%, #b8860b 100%);
+  color: #fff;
+  font-weight: 600;
+  padding: 0.65rem 1.5rem;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(200,162,78,0.3);
+  text-decoration: none;
+  display: inline-block;
+}
+.btn-gold:hover {
+  background: linear-gradient(135deg, #b8860b 0%, #c8a24e 50%, #daa520 100%);
+  box-shadow: 0 4px 16px rgba(200,162,78,0.5);
+  transform: translateY(-1px);
+}
+
+.btn-outline-gold {
+  background: transparent;
+  color: #8b6914;
+  font-weight: 600;
+  padding: 0.6rem 1.5rem;
+  border-radius: 8px;
+  border: 2px solid #c8a24e;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  display: inline-block;
+}
+.btn-outline-gold:hover {
+  background: #c8a24e;
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(200,162,78,0.4);
+}
+
+/* ===== Inputs ===== */
+.input-royal {
+  width: 100%;
+  padding: 0.7rem 1rem;
+  border: 1.5px solid rgba(200, 162, 78, 0.3);
+  border-radius: 8px;
+  background: #fffdf7;
+  color: #2d2312;
+  font-family: inherit;
+  font-size: 0.95rem;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+.input-royal:focus {
+  outline: none;
+  border-color: #c8a24e;
+  box-shadow: 0 0 0 3px rgba(200, 162, 78, 0.15);
+}
+.input-royal::placeholder {
+  color: #b49a64;
+}
+
+/* ===== Decorative Pattern Background ===== */
+.pattern-bg {
+  position: relative;
+}
+.pattern-bg::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-image:
+    radial-gradient(circle at 20% 50%, rgba(200,162,78,0.05) 0%, transparent 50%),
+    radial-gradient(circle at 80% 50%, rgba(200,162,78,0.05) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ===== Section Title ===== */
+.section-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #5c3f06;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.section-title::before {
+  content: '';
+  width: 4px;
+  height: 1.2em;
+  background: linear-gradient(180deg, #daa520, #b8860b);
+  border-radius: 2px;
+}
+
+/* ===== Vote Result Bars ===== */
+.vote-bar {
+  height: 8px;
+  border-radius: 4px;
+  background: #ede8d8;
+  overflow: hidden;
+}
+.vote-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.8s ease;
+}
+.vote-bar-agree { background: linear-gradient(90deg, #22c55e, #16a34a); }
+.vote-bar-disagree { background: linear-gradient(90deg, #ef4444, #dc2626); }
+.vote-bar-abstain { background: linear-gradient(90deg, #eab308, #ca8a04); }
+
+/* ===== Scrollbar ===== */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #fef9e7;
+}
+::-webkit-scrollbar-thumb {
+  background: #c8a24e;
+  border-radius: 3px;
+}
+
+/* ===== Status badges ===== */
+.badge-success {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 10px;
+  background: #dcfce7;
+  color: #166534;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.badge-danger {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 10px;
+  background: #fef2f2;
+  color: #991b1b;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.badge-gold {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 10px;
+  background: #fef9e7;
+  color: #8b6914;
+  border: 1px solid rgba(200,162,78,0.3);
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}

@@ -28,10 +28,7 @@ export default function BigScreen() {
     s.on("state:update", (data: State) => setState(data));
     s.on("bigscreen:update", (data: { message: string }) => setLiveMessage(data.message));
     const timer = setInterval(() => setNow(Date.now()), 1000);
-    return () => {
-      clearInterval(timer);
-      s.disconnect();
-    };
+    return () => { clearInterval(timer); s.disconnect(); };
   }, []);
 
   const activeMotion = useMemo(
@@ -40,13 +37,11 @@ export default function BigScreen() {
   );
 
   const countdownDisplay = useMemo(() => {
-    if (!state.countdownEnd) return "--";
+    if (!state.countdownEnd) return null;
     const diff = Math.max(0, Math.floor((state.countdownEnd - now) / 1000));
-    const min = Math.floor(diff / 60)
-      .toString()
-      .padStart(2, "0");
+    const min = Math.floor(diff / 60).toString().padStart(2, "0");
     const sec = (diff % 60).toString().padStart(2, "0");
-    return `${min}:${sec}`;
+    return { text: `${min}:${sec}`, seconds: diff };
   }, [state.countdownEnd, now]);
 
   const totalSchools = state.schools.length;
@@ -56,71 +51,119 @@ export default function BigScreen() {
   const totalVotes = votes.AGREE + votes.DISAGREE + votes.ABSTAIN;
 
   return (
-    <div className="min-h-screen bg-darkblue text-gold flex flex-col items-center py-10 px-4">
-      <div className="text-center mb-6">
-        <h2 className="text-4xl font-bold">หน้าจอแสดงผลขนาดใหญ่</h2>
-        <p className="text-gold/80 mt-2">ข้อมูลปรับปรุงแบบ Real-time</p>
-      </div>
+    <div className="min-h-screen bg-gradient-to-b from-cream-50 via-cream-100 to-cream-200 pattern-bg">
+      <div className="relative z-10 max-w-7xl mx-auto px-6 py-8">
 
-      <div className="w-full max-w-6xl grid gap-6">
-        <div className="bg-graydark p-6 rounded-lg shadow-lg">
-          <h3 className="text-2xl font-semibold mb-2">ข้อความประกาศ</h3>
-          <p className="text-xl">{liveMessage || state.bigScreenMessage}</p>
+        {/* ===== Header ===== */}
+        <div className="text-center mb-8">
+          <h1 className="text-4xl md:text-5xl font-extrabold text-royal-900">📺 หน้าจอแสดงผล</h1>
+          <div className="ornament-divider max-w-sm mx-auto mt-3">
+            <div className="diamond" />
+          </div>
+          <p className="text-royal-400 mt-2">ระบบโหวตลงมติ — สหวิทยาเขตวชิรบูรพา</p>
         </div>
 
-        <div className="bg-graydark p-6 rounded-lg shadow-lg grid gap-3">
-          <div className="flex justify-between items-center">
-            <div>
-              <div className="text-lg text-gold/80">Countdown</div>
-              <div className="text-3xl font-bold">{countdownDisplay}</div>
-            </div>
-            <div className="text-right">
-              <div className="text-lg text-gold/80">องค์ประชุม</div>
-              <div className="text-3xl font-bold">{presentSchools}/{totalSchools}</div>
+        {/* ===== Announcement ===== */}
+        <div className="card-royal text-center mb-6">
+          <div className="text-xl md:text-2xl font-semibold text-gold-700">
+            📢 {liveMessage || state.bigScreenMessage || "ยินดีต้อนรับ"}
+          </div>
+        </div>
+
+        {/* ===== Stats Row ===== */}
+        <div className="grid grid-cols-3 gap-4 mb-6">
+          {/* Countdown */}
+          <div className="card-royal text-center">
+            <div className="text-sm text-royal-400 mb-1">⏱ เวลาที่เหลือ</div>
+            <div className={`text-4xl md:text-5xl font-extrabold font-mono ${
+              countdownDisplay && countdownDisplay.seconds <= 10 ? "text-red-600 animate-pulse" : "text-royal-900"
+            }`}>
+              {countdownDisplay ? countdownDisplay.text : "--:--"}
             </div>
           </div>
-          <div className="text-sm text-gold/70">สถานะโหวต: {state.votingOpen ? "เปิดรับ" : "ปิดรับ"}</div>
+
+          {/* Quorum */}
+          <div className="card-royal text-center">
+            <div className="text-sm text-royal-400 mb-1">🏫 องค์ประชุม</div>
+            <div className="text-4xl md:text-5xl font-extrabold text-royal-900">
+              {presentSchools}<span className="text-2xl text-royal-300">/{totalSchools}</span>
+            </div>
+          </div>
+
+          {/* Status */}
+          <div className="card-royal text-center flex flex-col items-center justify-center">
+            <div className="text-sm text-royal-400 mb-1">สถานะ</div>
+            <span className={`text-lg font-bold px-4 py-1.5 rounded-full ${
+              state.votingOpen
+                ? "bg-green-100 text-green-700 border border-green-300"
+                : "bg-red-50 text-red-600 border border-red-200"
+            }`}>
+              {state.votingOpen ? "🟢 เปิดรับโหวต" : "🔴 ปิดรับโหวต"}
+            </span>
+          </div>
         </div>
 
-        <div className="bg-graydark p-6 rounded-lg shadow-lg grid gap-4">
-          <h3 className="text-2xl font-semibold">ผลโหวต</h3>
+        {/* ===== Vote Results ===== */}
+        <div className="card-royal mb-6">
+          <h3 className="section-title mb-5 text-2xl">🗳 ผลการลงมติ</h3>
           {activeMotion ? (
-            <div className="space-y-3">
-              <div>
-                <div className="text-xl font-bold">{activeMotion.title}</div>
-                <div className="text-gold/80 text-sm">{activeMotion.description}</div>
+            <div className="space-y-6">
+              {/* Motion Title */}
+              <div className="bg-cream-50 border border-gold/20 rounded-xl p-5 text-center">
+                <div className="text-2xl md:text-3xl font-extrabold text-royal-900">{activeMotion.title}</div>
+                <div className="text-sm text-royal-400 mt-1">{activeMotion.description}</div>
               </div>
-              <div className="grid grid-cols-3 gap-4 text-center">
-                {(
-                  [
-                    { label: "เห็นด้วย", key: "AGREE", color: "bg-green-700" },
-                    { label: "ไม่เห็นด้วย", key: "DISAGREE", color: "bg-red-700" },
-                    { label: "งดออกเสียง", key: "ABSTAIN", color: "bg-yellow-600" },
-                  ] as { label: string; key: VoteChoice; color: string }[]
-                ).map((item) => {
+
+              {/* Vote Bars */}
+              <div className="grid md:grid-cols-3 gap-4">
+                {([
+                  { label: "เห็นด้วย", key: "AGREE" as VoteChoice, emoji: "👍", color: "border-green-400", bg: "bg-green-50", text: "text-green-700", bar: "vote-bar-agree" },
+                  { label: "ไม่เห็นด้วย", key: "DISAGREE" as VoteChoice, emoji: "👎", color: "border-red-400", bg: "bg-red-50", text: "text-red-700", bar: "vote-bar-disagree" },
+                  { label: "งดออกเสียง", key: "ABSTAIN" as VoteChoice, emoji: "🤚", color: "border-yellow-400", bg: "bg-yellow-50", text: "text-yellow-700", bar: "vote-bar-abstain" },
+                ]).map((item) => {
                   const count = votes[item.key] || 0;
                   const percent = totalVotes ? Math.round((count / totalVotes) * 100) : 0;
                   return (
-                    <div key={item.key} className={`p-4 rounded ${item.color}`}>
-                      <div className="text-lg font-bold">{item.label}</div>
-                      <div className="text-3xl font-extrabold">{count}</div>
-                      <div className="text-gold/80">{percent}%</div>
+                    <div key={item.key} className={`rounded-xl border-2 ${item.color} ${item.bg} p-5 text-center`}>
+                      <div className="text-3xl mb-1">{item.emoji}</div>
+                      <div className={`text-lg font-bold ${item.text}`}>{item.label}</div>
+                      <div className={`text-5xl font-extrabold ${item.text} my-2`}>{count}</div>
+                      <div className="vote-bar mb-1">
+                        <div className={`vote-bar-fill ${item.bar}`} style={{ width: `${percent}%` }} />
+                      </div>
+                      <div className="text-sm text-royal-400">{percent}%</div>
                     </div>
                   );
                 })}
               </div>
+
+              {/* Total */}
+              <div className="text-center text-royal-400">
+                รวมทั้งหมด: <span className="font-bold text-royal-700">{totalVotes}</span> เสียง
+              </div>
             </div>
           ) : (
-            <div className="text-gold/70">ยังไม่มีญัตติที่กำลังแสดง</div>
+            <div className="text-center py-12">
+              <div className="text-5xl mb-3">📭</div>
+              <div className="text-xl text-royal-400">ยังไม่มีญัตติที่กำลังแสดง</div>
+            </div>
           )}
         </div>
 
-        <div className="bg-graydark p-6 rounded-lg shadow-lg">
-          <h3 className="text-2xl font-semibold mb-3">สถานะโรงเรียน</h3>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 text-sm">
+        {/* ===== School Status ===== */}
+        <div className="card-royal">
+          <h3 className="section-title mb-4">🏫 สถานะโรงเรียน</h3>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
             {state.schools.map((s) => (
-              <div key={s.id} className={`p-2 rounded ${state.attendance[s.id] ? "bg-green-700" : "bg-darkblue"}`}>
-                {s.name} {state.attendance[s.id] ? "✅" : "⬜"}
+              <div
+                key={s.id}
+                className={`p-3 rounded-xl border text-center text-sm font-medium transition-all ${
+                  state.attendance[s.id]
+                    ? "bg-green-50 border-green-300 text-green-800"
+                    : "bg-white border-gold/15 text-royal-300"
+                }`}
+              >
+                {state.attendance[s.id] ? "✅" : "⬜"} {s.name}
               </div>
             ))}
           </div>
@@ -129,4 +172,3 @@ export default function BigScreen() {
     </div>
   );
 }
-
