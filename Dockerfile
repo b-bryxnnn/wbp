@@ -31,17 +31,11 @@ COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 # Copy prisma CLI so we can run db push at startup
 COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
+# Copy bcryptjs (needed by seed.js for password hashing)
+COPY --from=builder /app/node_modules/bcryptjs ./node_modules/bcryptjs
+# Copy startup script and fix line endings (Windows CRLF → Linux LF)
+COPY --from=builder /app/start.sh ./start.sh
+RUN sed -i 's/\r$//' start.sh && chmod +x start.sh
 
-# Startup: wait for DB → push schema → seed → start server
 EXPOSE 3000
-CMD ["sh", "-c", "\
-  echo '=== Waiting for database ===' && \
-  for i in 1 2 3 4 5 6 7 8 9 10; do \
-    npx prisma db push --skip-generate && break; \
-    echo \"DB not ready (attempt $i/10), retrying in 3s...\"; \
-    sleep 3; \
-  done && \
-  echo '=== Seeding database ===' && \
-  node prisma/seed.js && \
-  echo '=== Starting server ===' && \
-  node server.js"]
+CMD ["./start.sh"]
