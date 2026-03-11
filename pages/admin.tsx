@@ -128,7 +128,7 @@ export default function Admin() {
   useEffect(() => {
     if (!authed) return;
     fetch("/api/socket").then(() => {
-      const s = io({ path: "/api/socket" });
+      const s = io({ path: "/api/socket", transports: ["websocket", "polling"] });
       setSocket(s);
       s.on("state:update", (data: State) => setState(data));
     });
@@ -136,8 +136,14 @@ export default function Admin() {
 
   useEffect(() => {
     if (!authed) return;
-    fetch("/api/schools").then((r) => r.json()).then((data) => setSchools(data.schools || []));
-    fetch("/api/admin/login-mode").then((r) => r.json()).then((data) => setLoginMode(data.loginMode));
+    fetch("/api/schools")
+      .then((r) => { if (!r.ok) throw new Error(r.statusText); return r.json(); })
+      .then((data) => setSchools(data.schools || []))
+      .catch((e) => console.error("Failed to load schools:", e));
+    fetch("/api/admin/login-mode")
+      .then((r) => { if (!r.ok) throw new Error(r.statusText); return r.json(); })
+      .then((data) => setLoginMode(data.loginMode))
+      .catch((e) => console.error("Failed to load login-mode:", e));
   }, [authed]);
 
   const sendMessage = () => socket?.emit("admin:screen-control", { message });
@@ -165,8 +171,15 @@ export default function Admin() {
     setGenerating(true);
     try {
       const res = await fetch("/api/admin/generate-credentials", { method: "POST" });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "เกิดข้อผิดพลาด" }));
+        alert(err.error || "สร้างข้อมูลล็อกอินไม่สำเร็จ: " + res.statusText);
+        return;
+      }
       const data = await res.json();
       setCredentials(data.credentials || []);
+    } catch (e: any) {
+      alert("เชื่อมต่อ server ไม่ได้: " + e.message);
     } finally {
       setGenerating(false);
     }
@@ -342,7 +355,7 @@ export default function Admin() {
                       : "bg-white border-gold/15 text-royal-400"
                   }`}>
                   {s.logoUrl ? (
-                    <img src={s.logoUrl} alt="" className="school-avatar-sm" />
+                    <img src={s.logoUrl.replace(/^http:\/\//i, "https://")} alt="" className="school-avatar-sm" />
                   ) : (
                     <div className="w-7 h-7 rounded-full bg-gold/10 flex items-center justify-center flex-shrink-0">
                       <School size={13} className="text-gold-500" />
@@ -503,7 +516,7 @@ export default function Admin() {
                   <div key={s.id} className="bg-white rounded-xl border border-gold/15 p-5 text-center space-y-3 hover:shadow-md transition-shadow">
                     {s.logoUrl && (
                       <div className="flex justify-center">
-                        <img src={s.logoUrl} alt={s.name} className="school-avatar" />
+                        <img src={s.logoUrl.replace(/^http:\/\//i, "https://")} alt={s.name} className="school-avatar" />
                       </div>
                     )}
                     <div className="font-semibold text-sm text-royal-700">{s.name}</div>

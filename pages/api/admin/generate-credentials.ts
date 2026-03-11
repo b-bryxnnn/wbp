@@ -20,37 +20,42 @@ function generatePassword(): string {
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") return res.status(405).end();
 
-  const control = await prisma.controlState.findUnique({ where: { id: 1 } });
-  const loginMode = control?.loginMode || "PER_SCHOOL";
-  const results: { name: string; username: string; password: string; type: string }[] = [];
+  try {
+    const control = await prisma.controlState.findUnique({ where: { id: 1 } });
+    const loginMode = control?.loginMode || "PER_SCHOOL";
+    const results: { name: string; username: string; password: string; type: string }[] = [];
 
-  if (loginMode === "PER_SCHOOL") {
-    const schools = await prisma.school.findMany({ orderBy: { id: "asc" } });
-    for (const school of schools) {
-      const username = generateUsername(school.name, school.id);
-      const password = generatePassword();
-      const hash = await bcrypt.hash(password, 10);
-      await prisma.school.update({
-        where: { id: school.id },
-        data: { username, passwordHash: hash },
-      });
-      results.push({ name: school.name, username, password, type: "school" });
+    if (loginMode === "PER_SCHOOL") {
+      const schools = await prisma.school.findMany({ orderBy: { id: "asc" } });
+      for (const school of schools) {
+        const username = generateUsername(school.name, school.id);
+        const password = generatePassword();
+        const hash = await bcrypt.hash(password, 10);
+        await prisma.school.update({
+          where: { id: school.id },
+          data: { username, passwordHash: hash },
+        });
+        results.push({ name: school.name, username, password, type: "school" });
+      }
+    } else {
+      const users = await prisma.user.findMany({ include: { school: true }, orderBy: { id: "asc" } });
+      for (const user of users) {
+        const username = generateUsername(user.name, user.id);
+        const password = generatePassword();
+        const hash = await bcrypt.hash(password, 10);
+        const qrToken = randomBytes(16).toString("hex");
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { username, passwordHash: hash, loginQrToken: qrToken },
+        });
+        results.push({ name: `${user.name} (${user.school.name})`, username, password, type: "user" });
+      }
     }
-  } else {
-    const users = await prisma.user.findMany({ include: { school: true }, orderBy: { id: "asc" } });
-    for (const user of users) {
-      const username = generateUsername(user.name, user.id);
-      const password = generatePassword();
-      const hash = await bcrypt.hash(password, 10);
-      const qrToken = randomBytes(16).toString("hex");
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { username, passwordHash: hash, loginQrToken: qrToken },
-      });
-      results.push({ name: `${user.name} (${user.school.name})`, username, password, type: "user" });
-    }
+
+    return res.status(200).json({ credentials: results, loginMode });
+  } catch (err: any) {
+    console.error("generate-credentials error:", err);
+    return res.status(500).json({ error: "สร้างข้อมูลล็อกอินไม่สำเร็จ", detail: err.message });
   }
-
-  return res.status(200).json({ credentials: results, loginMode });
 }
 

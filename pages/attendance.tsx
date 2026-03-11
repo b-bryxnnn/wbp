@@ -9,7 +9,7 @@ export default function Attendance() {
   const [state, setState] = useState<State>({ attendance: {}, schools: [] });
 
   useEffect(() => {
-    const s = io({ path: "/api/socket" });
+    const s = io({ path: "/api/socket", transports: ["websocket", "polling"] });
     s.on("state:update", (data: any) => {
       setState({ attendance: data.attendance || {}, schools: data.schools || [] });
     });
@@ -70,7 +70,7 @@ export default function Attendance() {
               }`}
             >
               {s.logoUrl ? (
-                <img src={s.logoUrl} alt="" className="school-avatar" />
+                <img src={s.logoUrl.replace(/^http:\/\//i, "https://")} alt="" className="school-avatar" />
               ) : (
                 <div className="w-10 h-10 rounded-full bg-gold/10 flex items-center justify-center flex-shrink-0">
                   <School size={18} className="text-gold-500" />

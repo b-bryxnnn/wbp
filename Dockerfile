@@ -22,6 +22,9 @@ COPY --from=builder /app/prisma ./prisma
 # Ensure Prisma client engine is included
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+# Copy prisma CLI so we can run db push at startup
+COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
 
+# Startup script: push schema to DB then start server
 EXPOSE 3000
-CMD ["node", "server.js"]
+CMD ["sh", "-c", "npx prisma db push --skip-generate && node server.js"]

@@ -42,7 +42,7 @@ export default function BigScreen() {
   const [liveMessage, setLiveMessage] = useState("อัปเดตผลโหวตและสถานะแบบ Real-time");
 
   useEffect(() => {
-    const s = io({ path: "/api/socket" });
+    const s = io({ path: "/api/socket", transports: ["websocket", "polling"] });
     s.on("state:update", (data: State) => setState(data));
     s.on("bigscreen:update", (data: { message: string }) => setLiveMessage(data.message));
     return () => { s.disconnect(); };
@@ -171,7 +171,7 @@ export default function BigScreen() {
                 }`}
               >
                 {s.logoUrl ? (
-                  <img src={s.logoUrl} alt="" className="school-avatar-sm flex-shrink-0" />
+                  <img src={s.logoUrl.replace(/^http:\/\//i, "https://")} alt="" className="school-avatar-sm flex-shrink-0" />
                 ) : (
                   <div className="w-8 h-8 rounded-full bg-gold/10 flex items-center justify-center flex-shrink-0">
                     <School size={14} className="text-gold-500" />

@@ -58,8 +58,12 @@ const buildState = async (): Promise<State> => {
 };
 
 const broadcast = async (io: Server) => {
-  const state = await buildState();
-  io.emit("state:update", state);
+  try {
+    const state = await buildState();
+    io.emit("state:update", state);
+  } catch (err) {
+    console.error("broadcast error:", err);
+  }
 };
 
 const addAudit = async (userId: number | null, action: string, details?: string) => {

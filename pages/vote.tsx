@@ -50,7 +50,7 @@ export default function VotePage() {
   const router = useRouter();
 
   useEffect(() => {
-    const s = io({ path: "/api/socket" });
+    const s = io({ path: "/api/socket", transports: ["websocket", "polling"] });
     setSocket(s);
     s.on("state:update", (data: State) => { setState(data); setVoted(null); });
     return () => { s.disconnect(); };
@@ -119,7 +119,7 @@ export default function VotePage() {
 
   const currentSchool = state.schools.find((s) => s.id === schoolId);
   const schoolName = currentSchool?.name;
-  const schoolLogo = currentSchool?.logoUrl;
+  const schoolLogo = currentSchool?.logoUrl?.replace(/^http:\/\//i, "https://");
 
   return (
     <div className="animate-fade-in max-w-2xl mx-auto px-4 py-8">
