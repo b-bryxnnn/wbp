@@ -160,25 +160,25 @@ export default function BigScreen() {
         {/* School Status */}
         <div className="card-royal">
           <h3 className="section-title mb-4"><School size={16} className="text-gold-600" /> สถานะโรงเรียน</h3>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {state.schools.map((s) => (
               <div
                 key={s.id}
-                className={`p-3.5 rounded-xl border text-xs font-medium transition-all flex items-center gap-2 ${
+                className={`p-4 rounded-xl border text-sm font-medium transition-all flex items-center gap-3 ${
                   state.attendance[s.id]
                     ? "bg-green-50 border-green-300 text-green-800 shadow-sm"
                     : "bg-white border-gold/15 text-royal-300"
                 }`}
               >
                 {s.logoUrl ? (
-                  <img src={s.logoUrl} alt="" className="school-avatar-sm" />
+                  <img src={s.logoUrl} alt="" className="school-avatar-sm flex-shrink-0" />
                 ) : (
-                  <div className="w-7 h-7 rounded-full bg-gold/10 flex items-center justify-center flex-shrink-0">
-                    <School size={13} className="text-gold-500" />
+                  <div className="w-8 h-8 rounded-full bg-gold/10 flex items-center justify-center flex-shrink-0">
+                    <School size={14} className="text-gold-500" />
                   </div>
                 )}
-                {state.attendance[s.id] ? <CheckCircle size={14} className="text-green-600 flex-shrink-0" /> : <Square size={14} className="flex-shrink-0" />}
-                <span className="leading-tight break-words">{s.name}</span>
+                {state.attendance[s.id] ? <CheckCircle size={16} className="text-green-600 flex-shrink-0" /> : <Square size={16} className="flex-shrink-0" />}
+                <span className="leading-snug">{s.name}</span>
               </div>
             ))}
           </div>
