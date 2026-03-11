@@ -221,10 +221,17 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
 
       socket.on("admin:toggle-vote", async (data: { open: boolean; motionId: number | null; userId?: number }) => {
         try {
+          if (!data.open) {
+            if (countdownTimer) { clearTimeout(countdownTimer); countdownTimer = null; }
+          }
+          const updateData = data.open
+            ? { votingOpen: true, activeMotionId: data.motionId, countdownEnd: null }
+            : { votingOpen: false, activeMotionId: null, countdownEnd: null };
+
           await prisma.controlState.upsert({
             where: { id: 1 },
-            update: { votingOpen: data.open, activeMotionId: data.motionId },
-            create: { votingOpen: data.open, activeMotionId: data.motionId },
+            update: updateData,
+            create: updateData,
           });
           if (data.motionId) {
             await prisma.motion.updateMany({ data: { isActive: false } });

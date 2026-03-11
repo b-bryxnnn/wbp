@@ -115,8 +115,17 @@ export default function LedScreen() {
 
         {/* Main content area */}
         <div className="flex-1 flex flex-col justify-center">
-          {/* Active Motion */}
-          {activeMotion ? (
+          {!state.votingOpen ? (
+            <div className="flex flex-col items-center justify-center text-center min-h-[60vh]">
+              <div className="w-40 h-40 rounded-full bg-black/20 border border-[#c8a24e]/40 flex items-center justify-center mb-8">
+                <Inbox size={96} className="text-[#c8a24e]" />
+              </div>
+              <div className="text-5xl md:text-6xl font-extrabold text-white mb-3">ปิดรับโหวต</div>
+              <div className="text-2xl md:text-3xl text-[#c8a24e] max-w-4xl leading-relaxed">
+                {displayMessage || "โปรดรอการเปิดโหวตรอบถัดไป"}
+              </div>
+            </div>
+          ) : activeMotion ? (
             <div className="space-y-8">
               {/* Motion title */}
               <div className="text-center">
@@ -159,43 +168,7 @@ export default function LedScreen() {
                 </div>
               )}
             </div>
-          ) : completedMotions.length > 0 ? (
-            /* Show last completed motion results */
-            (() => {
-              const m = completedMotions[completedMotions.length - 1];
-              const mChoices = m.allowedChoices || ["AGREE", "DISAGREE", "ABSTAIN"];
-              const v = state.votes[m.id] || {};
-              const t = mChoices.reduce((s, k) => s + (v[k] || 0), 0);
-              const agree = v["AGREE"] || 0;
-              const disagree = v["DISAGREE"] || 0;
-              const result = agree > disagree ? "ผ่าน" : agree < disagree ? "ไม่ผ่าน" : "เท่ากัน";
-              const resultColor = agree > disagree ? "text-green-400" : agree < disagree ? "text-red-400" : "text-yellow-400";
-              return (
-                <div className="space-y-8">
-                  <div className="text-center">
-                    <div className="text-[#8b7a52] text-xl mb-4">ผลมติล่าสุด</div>
-                    <h2 className="text-4xl md:text-6xl font-extrabold text-white mb-4">{m.title}</h2>
-                  </div>
-                  <div className="text-center space-y-8">
-                    <div className={`text-7xl md:text-9xl font-extrabold ${resultColor}`}>{result}</div>
-                    <div className="flex justify-center gap-12 text-2xl">
-                      {mChoices.map((k) => {
-                        const meta = CHOICE_META[k];
-                        if (!meta) return null;
-                        return (
-                          <span key={k} className={`${meta.text} flex items-center gap-3`}>
-                            <meta.Icon size={28} /> {v[k] || 0}
-                          </span>
-                        );
-                      })}
-                    </div>
-                    <div className="text-[#8b7a52] text-xl">รวม {t} เสียง</div>
-                  </div>
-                </div>
-              );
-            })()
           ) : (
-            /* Idle state */
             <div className="text-center">
               <div className="w-36 h-36 rounded-full bg-[#c8a24e]/10 flex items-center justify-center mx-auto mb-8">
                 <Inbox size={72} className="text-[#8b7a52]" />

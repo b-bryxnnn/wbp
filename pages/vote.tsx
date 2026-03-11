@@ -36,6 +36,7 @@ type Toast = { id: number; type: "success" | "error" | "info"; message: string }
 export default function VotePage() {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [state, setState] = useState<State>({ motions: [], votes: {}, attendance: {}, bigScreenMessage: "", votingOpen: false, activeMotionId: null, countdownEnd: null, schools: [] });
+  const [stateLoaded, setStateLoaded] = useState(false);
   const [schoolId, setSchoolId] = useState<number | "">("");
   const [voter, setVoter] = useState("");
   const [authToken, setAuthToken] = useState<string | null>(null);
@@ -108,7 +109,7 @@ export default function VotePage() {
     fetch("/api/socket").then(() => {
       const s = io({ path: "/api/socket", transports: ["polling"] });
       setSocket(s);
-      s.on("state:update", (data: State) => { setState(data); setVoted(null); });
+      s.on("state:update", (data: State) => { setState(data); setVoted(null); setStateLoaded(true); });
       s.on("session:invalid", (data: { reason: string }) => {
         setKicked(data.reason || "เซสชันหมดอายุ");
         setAuthToken(null); setSessionToken(null); setSchoolId(""); setVoter("");
@@ -277,6 +278,21 @@ export default function VotePage() {
           </div>
         ))}
       </div>
+
+      {/* Closed overlay when voting is off */}
+      {stateLoaded && !state.votingOpen && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-gradient-to-b from-[#0f0a05]/92 to-[#1b1208]/96 px-6 text-center">
+          <div className="max-w-2xl mx-auto">
+            <div className="w-28 h-28 rounded-full border-4 border-gold-300 bg-black/40 flex items-center justify-center mx-auto mb-6 shadow-2xl shadow-black/40">
+              <Lock size={42} className="text-gold-400" />
+            </div>
+            <div className="text-3xl md:text-4xl font-extrabold text-white mb-3">ปิดรับโหวต</div>
+            <div className="text-lg md:text-xl text-gold-200 leading-relaxed">
+              {state.bigScreenMessage || "โปรดรอการเปิดโหวตรอบถัดไป"}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Header */}
       <div className="text-center mb-8">

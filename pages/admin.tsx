@@ -317,7 +317,7 @@ export default function Admin() {
               <div class="name">${s.name}</div>
             </div>
             <div class="qr-frame">
-              <div class="qr"><img src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(url)}&color=2d2312" width="240" height="240" /></div>
+              <div class="qr"><img src="https://api.qrserver.com/v1/create-qr-code/?size=360x360&data=${encodeURIComponent(url)}&color=2d2312" width="280" height="280" /></div>
             </div>
             <div class="scan-text">📱 สแกน QR Code เพื่อเข้าสู่ระบบลงมติ</div>
             <div class="url">${url}</div>
@@ -333,21 +333,21 @@ export default function Admin() {
   @page { size: A4 landscape; margin: 8mm; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: 'Sarabun', sans-serif; color: #2d2312; }
-  .page { display: flex; width: 100%; height: 100vh; page-break-after: always; gap: 12px; padding: 4px; }
+  .page { display: flex; width: 100%; height: 100vh; page-break-after: always; gap: 16px; padding: 6px; }
   .half { width: 50%; display: flex; align-items: center; justify-content: center; }
-  .card-inner { width: 100%; max-width: 380px; border: 2.5px solid #c8a24e; border-radius: 20px; padding: 0; overflow: hidden; background: #fffdf7; position: relative; }
+  .card-inner { width: 100%; max-width: 520px; min-height: 360px; border: 3px solid #c8a24e; border-radius: 22px; padding: 0; overflow: hidden; background: #fffdf7; position: relative; box-shadow: 0 12px 40px rgba(0,0,0,0.08); }
   .gold-bar { height: 6px; background: linear-gradient(90deg, #daa520, #c8a24e, #b8860b); }
   .gold-bar-bottom { height: 4px; background: linear-gradient(90deg, #b8860b, #c8a24e, #daa520); }
-  .header-row { display: flex; align-items: center; gap: 10px; padding: 14px 20px 8px; }
+  .header-row { display: flex; align-items: center; gap: 12px; padding: 18px 24px 10px; }
   .header-title { font-weight: 800; font-size: 14px; color: #2d2312; }
-  .header-sub { font-size: 10px; color: #8b6914; font-weight: 600; line-height: 1.35; }
-  .school-section { text-align: center; padding: 8px 20px 12px; }
-  .logo { width: 56px; height: 56px; object-fit: contain; margin-bottom: 6px; border-radius: 50%; border: 2px solid rgba(200,162,78,0.25); padding: 3px; background: white; }
-  .name { font-weight: 700; font-size: 15px; text-align: center; color: #2d2312; line-height: 1.3; }
-  .qr-frame { display: flex; justify-content: center; padding: 0 20px 12px; }
-  .qr { background: white; padding: 12px; border-radius: 16px; border: 2px solid rgba(200,162,78,0.2); box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
-  .scan-text { text-align: center; font-size: 12px; color: #8b6914; font-weight: 700; padding: 0 20px 4px; }
-  .url { font-size: 7px; color: #bbb; word-break: break-all; text-align: center; padding: 0 20px 12px; max-width: 320px; margin: 0 auto; }
+  .header-sub { font-size: 11px; color: #8b6914; font-weight: 700; line-height: 1.45; }
+  .school-section { text-align: center; padding: 12px 24px 14px; }
+  .logo { width: 78px; height: 78px; object-fit: contain; margin-bottom: 10px; border-radius: 50%; border: 2px solid rgba(200,162,78,0.25); padding: 4px; background: white; }
+  .name { font-weight: 800; font-size: 17px; text-align: center; color: #2d2312; line-height: 1.35; }
+  .qr-frame { display: flex; justify-content: center; padding: 0 28px 16px; }
+  .qr { background: white; padding: 14px; border-radius: 18px; border: 2px solid rgba(200,162,78,0.24); box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+  .scan-text { text-align: center; font-size: 13px; color: #8b6914; font-weight: 800; padding: 0 24px 6px; letter-spacing: 0.01em; }
+  .url { font-size: 8px; color: #9c8b68; word-break: break-all; text-align: center; padding: 0 24px 16px; max-width: 420px; margin: 0 auto; }
 </style></head><body>${cardsHtml}</body></html>`);
     w.document.close(); w.focus(); setTimeout(() => { w.print(); }, 1200);
   };
@@ -665,6 +665,31 @@ export default function Admin() {
                     );
                   })}
                 </div>
+                {selectedMotion && (() => {
+                  const m = state.motions.find((mo) => mo.id === selectedMotion);
+                  if (!m) return null;
+                  const v = state.votes[m.id] || {};
+                  const choices = m.allowedChoices || ["AGREE", "DISAGREE", "ABSTAIN"];
+                  const total = choices.reduce((s, k) => s + (v[k] || 0), 0);
+                  return (
+                    <div className="mt-4 card-royal bg-cream-50">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="text-sm font-bold text-royal-800 flex items-center gap-2"><ScrollText size={14} /> ข้อมูลญัตติที่เลือก</div>
+                        <span className="text-xs text-royal-400">รวม {total} เสียง</span>
+                      </div>
+                      <div className="text-lg font-extrabold text-royal-900 mb-1">{m.title}</div>
+                      {m.description && <div className="text-sm text-royal-500 mb-2">{m.description}</div>}
+                      <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-2 mt-3">
+                        {choices.map((c) => (
+                          <div key={c} className="bg-white border border-gold/20 rounded-lg p-3 flex items-center justify-between">
+                            <span className="text-sm font-semibold text-royal-700">{CHOICE_LABELS[c] || c}</span>
+                            <span className="text-lg font-extrabold text-royal-900">{v[c] || 0}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             )}
           </div>

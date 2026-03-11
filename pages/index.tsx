@@ -19,11 +19,16 @@ export default function Home() {
 	return (
 		<div className="animate-fade-in">
 			{/* Hero Section */}
-			<section className="hero-gradient py-20 md:py-28 relative overflow-hidden">
+			<section
+				className="hero-gradient py-20 md:py-28 relative overflow-hidden"
+				style={{
+					backgroundImage: `linear-gradient(180deg, rgba(15,9,4,0.75), rgba(15,9,4,0.6)), url('https://scontent.fbkk12-1.fna.fbcdn.net/v/t39.30808-6/466664401_988322433330506_2614708189359165683_n.jpg?_nc_cat=101&ccb=1-7&_nc_sid=53a332&_nc_ohc=ubFFIckU-BcQ7kNvwFO9zcy&_nc_oc=Adl6rDbpo6VPLWpCBf9rMFwKrbmqAamKao4hEOJWAWLhRbqKuuANOo8_enEIr3jbCvxCjpSnoEBQrQJtyxW7afKD&_nc_zt=23&_nc_ht=scontent.fbkk12-1.fna&_nc_gid=6gnL6BvNK-WQJCu7uwOkmQ&_nc_ss=8&oh=00_Afwj9qmLZms-HdyVALkgUKzLAbykB-gDKDE8vETaTwNqsQ&oe=69B74673')`,
+					backgroundSize: "cover",
+					backgroundPosition: "center",
+				}}
+			>
 				{/* Decorative elements */}
-				<div className="absolute inset-0 flex items-center justify-center opacity-[0.03] pointer-events-none">
-					<img src={HOST_LOGO} alt="" className="w-[500px] h-[500px] object-contain" />
-				</div>
+				<div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/55" />
 				<div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-gold to-transparent" />
 
 				<div className="max-w-4xl mx-auto px-4 text-center relative">

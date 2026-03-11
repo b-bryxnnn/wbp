@@ -386,26 +386,30 @@ body {
 /* ===== Toast Notifications ===== */
 .toast-container {
   position: fixed;
-  top: 1rem;
-  right: 1rem;
+  top: 1.25rem;
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 9999;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.75rem;
   pointer-events: none;
+  width: min(520px, 95vw);
+  align-items: stretch;
 }
 .toast {
   pointer-events: all;
-  padding: 0.75rem 1.25rem;
-  border-radius: 12px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.12);
-  animation: toastIn 0.3s ease-out;
+  padding: 1rem 1.4rem;
+  border-radius: 16px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.18), 0 0 0 1px rgba(255,255,255,0.08);
+  backdrop-filter: blur(10px);
+  animation: toastIn 0.35s ease-out;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  max-width: 360px;
+  gap: 0.75rem;
+  width: 100%;
 }
 .toast-success {
   background: linear-gradient(135deg, #dcfce7, #bbf7d0);
@@ -423,8 +427,8 @@ body {
   border: 1px solid #c7d2fe;
 }
 @keyframes toastIn {
-  from { opacity: 0; transform: translateX(100px); }
-  to { opacity: 1; transform: translateX(0); }
+  from { opacity: 0; transform: translate(-50%, -10px) scale(0.98); }
+  to { opacity: 1; transform: translate(-50%, 0) scale(1); }
 }
 
 /* ===== Geo Overlay ===== */
