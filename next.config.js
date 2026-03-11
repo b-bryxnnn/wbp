@@ -2,6 +2,15 @@
 const nextConfig = {
   reactStrictMode: true,
   output: "standalone",
+  swcMinify: true,
+  compiler: {
+    removeConsole: process.env.NODE_ENV === "production",
+  },
+  modularizeImports: {
+    "lucide-react": {
+      transform: "lucide-react/dist/esm/icons/{{ kebabCase member }}",
+    },
+  },
   experimental: {
     outputFileTracingIncludes: {
       "/api/**": [
@@ -13,4 +22,3 @@ const nextConfig = {
 };
 
 module.exports = nextConfig;
-

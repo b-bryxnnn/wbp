@@ -2,13 +2,14 @@ import React from "react";
 import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
+import { Landmark, Settings, Vote, Monitor, ClipboardList } from "lucide-react";
 
 const navItems = [
-  { href: "/", label: "หน้าหลัก", icon: "🏛" },
-  { href: "/admin", label: "ผู้ดูแลระบบ", icon: "⚙️" },
-  { href: "/vote", label: "ลงมติ", icon: "🗳" },
-  { href: "/bigscreen", label: "จอแสดงผล", icon: "📺" },
-  { href: "/attendance", label: "เช็คชื่อ", icon: "📋" },
+  { href: "/", label: "หน้าหลัก", icon: Landmark },
+  { href: "/admin", label: "ผู้ดูแลระบบ", icon: Settings },
+  { href: "/vote", label: "ลงมติ", icon: Vote },
+  { href: "/bigscreen", label: "จอแสดงผล", icon: Monitor },
+  { href: "/attendance", label: "เช็คชื่อ", icon: ClipboardList },
 ];
 
 export default function Layout({ children }: { children: React.ReactNode }) {
@@ -19,19 +20,28 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <Head>
         <title>ระบบโหวตลงมติ — สหวิทยาเขตวชิรบูรพา</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏛</text></svg>" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&family=Prompt:wght@300;400;500;600;700&display=swap"
+        />
+        <link
+          rel="icon"
+          href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' rx='3' fill='%23c8a24e'/><text x='3' y='13' font-size='12' fill='white'>V</text></svg>"
+        />
       </Head>
 
       <div className="min-h-screen flex flex-col">
-        {/* ===== Top Gold Bar ===== */}
+        {/* Top Gold Bar */}
         <div className="h-1 bg-gradient-to-r from-transparent via-gold to-transparent" />
 
-        {/* ===== Header ===== */}
-        <header className="bg-white/80 backdrop-blur-sm border-b border-gold/20 sticky top-0 z-50">
+        {/* Header */}
+        <header className="bg-white border-b border-gold/20 sticky top-0 z-50">
           <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
             <Link href="/" className="flex items-center gap-3 no-underline">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gold-400 to-gold-600 flex items-center justify-center text-white text-lg font-bold shadow-gold">
-                🏛
+              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-gold-400 to-gold-600 flex items-center justify-center text-white shadow-sm">
+                <Landmark size={18} />
               </div>
               <div>
                 <div className="text-sm font-bold text-royal-800 leading-tight">ระบบโหวตลงมติ</div>
@@ -42,37 +52,39 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <nav className="hidden md:flex items-center gap-1">
               {navItems.map((item) => {
                 const active = router.pathname === item.href;
+                const Icon = item.icon;
                 return (
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`px-3 py-2 rounded-lg text-sm font-medium no-underline transition-all ${
+                    className={`px-3 py-2 rounded-lg text-sm font-medium no-underline transition-colors flex items-center gap-1.5 ${
                       active
                         ? "bg-gold/10 text-gold-700 border border-gold/20"
                         : "text-royal-600 hover:bg-gold/5 hover:text-gold-700"
                     }`}
                   >
-                    <span className="mr-1">{item.icon}</span>
+                    <Icon size={15} />
                     {item.label}
                   </Link>
                 );
               })}
             </nav>
 
-            {/* Mobile menu */}
+            {/* Mobile nav */}
             <nav className="flex md:hidden items-center gap-1">
               {navItems.map((item) => {
                 const active = router.pathname === item.href;
+                const Icon = item.icon;
                 return (
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`p-2 rounded-lg text-lg no-underline transition-all ${
-                      active ? "bg-gold/10" : "hover:bg-gold/5"
+                    className={`p-2 rounded-lg no-underline transition-colors ${
+                      active ? "bg-gold/10 text-gold-700" : "text-royal-500 hover:bg-gold/5"
                     }`}
                     title={item.label}
                   >
-                    {item.icon}
+                    <Icon size={18} />
                   </Link>
                 );
               })}
@@ -80,13 +92,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
-        {/* ===== Main Content ===== */}
-        <main className="flex-1 relative">
-          {children}
-        </main>
+        {/* Main Content */}
+        <main className="flex-1">{children}</main>
 
-        {/* ===== Footer ===== */}
-        <footer className="border-t border-gold/20 bg-white/60 backdrop-blur-sm">
+        {/* Footer */}
+        <footer className="border-t border-gold/20 bg-white">
           <div className="max-w-7xl mx-auto px-4 py-4 text-center">
             <div className="ornament-divider mb-3">
               <div className="diamond" />
@@ -100,7 +110,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </div>
         </footer>
 
-        {/* ===== Bottom Gold Bar ===== */}
+        {/* Bottom Gold Bar */}
         <div className="h-1 bg-gradient-to-r from-transparent via-gold to-transparent" />
       </div>
     </>

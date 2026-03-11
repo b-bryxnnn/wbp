@@ -7,7 +7,7 @@ import { verifyAuthToken, type AuthPayload } from "../../lib/auth";
 export const config = { api: { bodyParser: false } };
 
 type VoteChoice = "AGREE" | "DISAGREE" | "ABSTAIN";
-type SchoolDto = { id: number; name: string; loginToken?: string };
+type SchoolDto = { id: number; name: string; loginToken?: string; logoUrl?: string };
 type MotionDto = { id: number; title: string; description: string; isActive: boolean };
 
 type State = {
@@ -25,7 +25,7 @@ type State = {
 const buildState = async (): Promise<State> => {
   const [control, schools, motions, voteAgg, attendance, auditLogs] = await Promise.all([
     prisma.controlState.upsert({ where: { id: 1 }, update: {}, create: {} }),
-    prisma.school.findMany({ orderBy: { id: "asc" }, select: { id: true, name: true, loginToken: true } }),
+    prisma.school.findMany({ orderBy: { id: "asc" }, select: { id: true, name: true, loginToken: true, logoUrl: true } }),
     prisma.motion.findMany({ orderBy: { createdAt: "asc" } }),
     prisma.vote.groupBy({ by: ["motionId", "choice"], _count: { _all: true } }),
     prisma.attendance.findMany({ where: { checkedIn: true }, select: { schoolId: true } }),
@@ -52,7 +52,7 @@ const buildState = async (): Promise<State> => {
     votingOpen: control.votingOpen,
     activeMotionId: control.activeMotionId,
     countdownEnd: control.countdownEnd ? control.countdownEnd.getTime() : null,
-    schools: schools.map((s) => ({ id: s.id, name: s.name, loginToken: s.loginToken })),
+    schools: schools.map((s) => ({ id: s.id, name: s.name, loginToken: s.loginToken, logoUrl: s.logoUrl || undefined })),
     auditLogs: auditLogs.map((a) => ({ action: a.action, detail: a.details || undefined, at: a.timestamp.getTime() })),
   };
 };

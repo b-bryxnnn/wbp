@@ -1,16 +1,15 @@
 import React, { useEffect, useState } from "react";
 import { io, Socket } from "socket.io-client";
+import { ClipboardList, School, CheckCircle, Square, Users } from "lucide-react";
 
-type School = { id: number; name: string; loginToken?: string };
-type State = { attendance: Record<number, boolean>; schools: School[] };
+type SchoolT = { id: number; name: string; loginToken?: string; logoUrl?: string };
+type State = { attendance: Record<number, boolean>; schools: SchoolT[] };
 
 export default function Attendance() {
-  const [socket, setSocket] = useState<Socket | null>(null);
   const [state, setState] = useState<State>({ attendance: {}, schools: [] });
 
   useEffect(() => {
     const s = io({ path: "/api/socket" });
-    setSocket(s);
     s.on("state:update", (data: any) => {
       setState({ attendance: data.attendance || {}, schools: data.schools || [] });
     });
@@ -25,7 +24,9 @@ export default function Attendance() {
     <div className="animate-fade-in max-w-4xl mx-auto px-4 py-8">
       {/* Header */}
       <div className="text-center mb-8">
-        <h2 className="text-3xl font-extrabold text-royal-900">📋 เช็คชื่อแบบสด</h2>
+        <h2 className="text-2xl font-extrabold text-royal-900 flex items-center justify-center gap-2">
+          <ClipboardList size={24} /> เช็คชื่อแบบสด
+        </h2>
         <div className="ornament-divider max-w-xs mx-auto mt-2">
           <div className="diamond" />
         </div>
@@ -33,7 +34,9 @@ export default function Attendance() {
 
       {/* Quorum Card */}
       <div className="card-royal mb-6 text-center">
-        <div className="text-sm text-royal-400 mb-2">องค์ประชุม</div>
+        <div className="text-sm text-royal-400 mb-2 flex items-center justify-center gap-1">
+          <Users size={14} /> องค์ประชุม
+        </div>
         <div className="text-5xl font-extrabold text-royal-900 mb-3">
           {present}<span className="text-3xl text-royal-300">/{total}</span>
         </div>
@@ -52,18 +55,20 @@ export default function Attendance() {
 
       {/* School List */}
       <div className="card-royal">
-        <h3 className="section-title mb-4">🏫 รายชื่อโรงเรียน</h3>
+        <h3 className="section-title mb-4"><School size={16} className="text-gold-600" /> รายชื่อโรงเรียน</h3>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-          {state.schools.map((s: School) => (
+          {state.schools.map((s: SchoolT) => (
             <div
               key={s.id}
-              className={`p-3 rounded-xl border text-center text-sm font-medium transition-all ${
+              className={`p-3 rounded-lg border text-sm font-medium transition-colors flex items-center gap-2 ${
                 state.attendance[s.id]
                   ? "bg-green-50 border-green-300 text-green-800"
                   : "bg-white border-gold/15 text-royal-300"
               }`}
             >
-              {state.attendance[s.id] ? "✅" : "⬜"} {s.name}
+              {s.logoUrl && <img src={s.logoUrl} alt="" className="w-6 h-6 object-contain flex-shrink-0" />}
+              {state.attendance[s.id] ? <CheckCircle size={14} /> : <Square size={14} />}
+              <span className="truncate">{s.name}</span>
             </div>
           ))}
           {state.schools.length === 0 && (
