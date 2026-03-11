@@ -11,8 +11,6 @@ services:
       - SOCKET_IO_PATH=/api/socket
     depends_on:
       - db
-    volumes:
-      - .:/app
     restart: unless-stopped
 
   db:
