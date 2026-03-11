@@ -164,7 +164,7 @@ export default function BigScreen() {
             {state.schools.map((s) => (
               <div
                 key={s.id}
-                className={`p-3.5 rounded-xl border text-sm font-medium transition-all flex items-center gap-2.5 ${
+                className={`p-3.5 rounded-xl border text-xs font-medium transition-all flex items-center gap-2 ${
                   state.attendance[s.id]
                     ? "bg-green-50 border-green-300 text-green-800 shadow-sm"
                     : "bg-white border-gold/15 text-royal-300"
@@ -177,8 +177,8 @@ export default function BigScreen() {
                     <School size={13} className="text-gold-500" />
                   </div>
                 )}
-                {state.attendance[s.id] ? <CheckCircle size={15} className="text-green-600 flex-shrink-0" /> : <Square size={15} className="flex-shrink-0" />}
-                <span className="truncate">{s.name}</span>
+                {state.attendance[s.id] ? <CheckCircle size={14} className="text-green-600 flex-shrink-0" /> : <Square size={14} className="flex-shrink-0" />}
+                <span className="leading-tight break-words">{s.name}</span>
               </div>
             ))}
           </div>

@@ -172,27 +172,25 @@ export default function VotePage() {
               <div className="w-16 h-16 rounded-full bg-gold/10 flex items-center justify-center mx-auto mb-4">
                 <QrCode size={32} className="text-gold-600" />
               </div>
-              <p className="text-sm text-royal-500 mb-5">สแกน QR Code ที่ได้รับจากผู้ดูแลระบบ</p>
-              <div className="inline-block bg-white p-4 rounded-xl border border-gold/15 shadow-sm">
-                <QRCode value={`${typeof window !== "undefined" ? window.location.origin : ""}/vote`} bgColor="#ffffff" fgColor="#2d2312" size={160} />
-              </div>
-              <p className="text-xs text-royal-300 mt-4">หรือเปิดลิงก์ที่ได้รับจาก QR Code ในเบราว์เซอร์โดยตรง</p>
+              <p className="text-base font-semibold text-royal-700 mb-2">สแกน QR Code เพื่อเข้าสู่ระบบ</p>
+              <p className="text-sm text-royal-400 mb-2">ใช้กล้องมือถือสแกน QR Code ที่ได้รับจากผู้ดูแลระบบ</p>
+              <p className="text-xs text-royal-300">ระบบจะเข้าสู่หน้าลงมติโดยอัตโนมัติ</p>
             </div>
           ) : (
             <div className="space-y-3">
               <div className="relative">
-                <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-royal-300" />
+                <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-royal-300 pointer-events-none" />
                 <input
-                  className="input-royal pl-10"
+                  className="input-royal !pl-10"
                   placeholder="ชื่อผู้ใช้"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                 />
               </div>
               <div className="relative">
-                <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-royal-300" />
+                <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-royal-300 pointer-events-none" />
                 <input
-                  className="input-royal pl-10"
+                  className="input-royal !pl-10"
                   placeholder="รหัสผ่าน"
                   type="password"
                   value={password}

@@ -27,7 +27,10 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin: 1rem 0;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  margin-left: auto;
+  margin-right: auto;
 }
 .ornament-divider::before,
 .ornament-divider::after {
@@ -122,25 +125,27 @@ body {
   transform: translateY(-1px);
 }
 
-/* ===== Inputs ===== */
-.input-royal {
-  width: 100%;
-  padding: 0.7rem 1rem;
-  border: 1.5px solid rgba(200, 162, 78, 0.25);
-  border-radius: 10px;
-  background: #fffdf7;
-  color: #2d2312;
-  font-family: inherit;
-  font-size: 0.95rem;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-.input-royal:focus {
-  outline: none;
-  border-color: #c8a24e;
-  box-shadow: 0 0 0 3px rgba(200, 162, 78, 0.12);
-}
-.input-royal::placeholder {
-  color: #b49a64;
+/* ===== Inputs — use @layer so Tailwind utilities (pl-10 etc.) can override ===== */
+@layer components {
+  .input-royal {
+    width: 100%;
+    padding: 0.7rem 1rem;
+    border: 1.5px solid rgba(200, 162, 78, 0.25);
+    border-radius: 10px;
+    background: #fffdf7;
+    color: #2d2312;
+    font-family: inherit;
+    font-size: 0.95rem;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  .input-royal:focus {
+    outline: none;
+    border-color: #c8a24e;
+    box-shadow: 0 0 0 3px rgba(200, 162, 78, 0.12);
+  }
+  .input-royal::placeholder {
+    color: #b49a64;
+  }
 }
 
 /* ===== Section Title ===== */

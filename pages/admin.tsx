@@ -201,9 +201,9 @@ export default function Admin() {
             </div>
             <div className="space-y-4">
               <div className="relative">
-                <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-royal-300" />
+                <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-royal-300 pointer-events-none z-10" />
                 <input
-                  className="input-royal pl-10 pr-10"
+                  className="input-royal !pl-10 !pr-10"
                   type={showPw ? "text" : "password"}
                   placeholder="รหัสผ่านผู้ดูแลระบบ"
                   value={adminPw}
@@ -213,7 +213,7 @@ export default function Admin() {
                 />
                 <button
                   type="button"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-royal-300 hover:text-royal-500 transition-colors"
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-royal-300 hover:text-royal-500 transition-colors z-10"
                   onClick={() => setShowPw(!showPw)}
                   tabIndex={-1}
                 >
@@ -349,7 +349,7 @@ export default function Admin() {
                     </div>
                   )}
                   {state.attendance[s.id] ? <CheckCircle size={14} className="text-green-600 flex-shrink-0" /> : <Square size={14} className="flex-shrink-0" />}
-                  <span className="truncate">{s.name}</span>
+                  <span className="leading-tight text-xs">{s.name}</span>
                 </div>
               ))}
             </div>
@@ -548,9 +548,9 @@ export default function Admin() {
               <div>
                 <label className="text-sm font-semibold text-royal-600 mb-1.5 block">รหัสผ่านใหม่</label>
                 <div className="relative">
-                  <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-royal-300" />
+                  <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-royal-300 pointer-events-none z-10" />
                   <input
-                    className="input-royal pl-10"
+                    className="input-royal !pl-10"
                     type="password"
                     placeholder="รหัสผ่านใหม่ (อย่างน้อย 4 ตัวอักษร)"
                     value={newPassword}
@@ -561,9 +561,9 @@ export default function Admin() {
               <div>
                 <label className="text-sm font-semibold text-royal-600 mb-1.5 block">ยืนยันรหัสผ่านใหม่</label>
                 <div className="relative">
-                  <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-royal-300" />
+                  <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-royal-300 pointer-events-none z-10" />
                   <input
-                    className="input-royal pl-10"
+                    className="input-royal !pl-10"
                     type="password"
                     placeholder="พิมพ์รหัสผ่านอีกครั้ง"
                     value={confirmPassword}

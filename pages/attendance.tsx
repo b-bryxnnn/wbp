@@ -77,7 +77,7 @@ export default function Attendance() {
                 </div>
               )}
               <div className="flex-1 min-w-0">
-                <div className="truncate font-semibold">{s.name}</div>
+                <div className="font-semibold leading-tight">{s.name}</div>
                 <div className={`text-xs mt-0.5 ${state.attendance[s.id] ? "text-green-600" : "text-royal-300"}`}>
                   {state.attendance[s.id] ? "เข้าร่วมแล้ว" : "ยังไม่เข้าร่วม"}
                 </div>

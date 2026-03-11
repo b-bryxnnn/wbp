@@ -8,44 +8,60 @@ const ADMIN_SECRET = process.env.JWT_SECRET || "dev-secret";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === "POST") {
-    const { password } = req.body;
-    if (!password) return res.status(400).json({ error: "กรุณากรอกรหัสผ่าน" });
+    try {
+      const { password } = req.body;
+      if (!password) return res.status(400).json({ error: "กรุณากรอกรหัสผ่าน" });
 
-    const control = await prisma.controlState.findUnique({ where: { id: 1 } });
-
-    // If no admin password set yet, use env variable or default "admin1234"
-    const envAdminPassword = process.env.ADMIN_PASSWORD || "admin1234";
-
-    if (control?.adminPasswordHash) {
-      // Verify against stored hash
-      const valid = await bcrypt.compare(password, control.adminPasswordHash);
-      if (!valid) return res.status(401).json({ error: "รหัสผ่านไม่ถูกต้อง" });
-    } else {
-      // No hash stored — check against env/default, then store it
-      if (password !== envAdminPassword) {
-        return res.status(401).json({ error: "รหัสผ่านไม่ถูกต้อง" });
+      let control: any = null;
+      try {
+        control = await prisma.controlState.findUnique({ where: { id: 1 } });
+      } catch {
+        // Table might not exist yet — create it
+        try {
+          control = await prisma.controlState.create({ data: {} });
+        } catch { /* ignore */ }
       }
-      const hash = await bcrypt.hash(password, 10);
-      await prisma.controlState.upsert({
-        where: { id: 1 },
-        update: { adminPasswordHash: hash },
-        create: { adminPasswordHash: hash },
-      });
+
+      // If no admin password set yet, use env variable or default "admin1234"
+      const envAdminPassword = process.env.ADMIN_PASSWORD || "admin1234";
+
+      if (control?.adminPasswordHash) {
+        // Verify against stored hash
+        const valid = await bcrypt.compare(password, control.adminPasswordHash);
+        if (!valid) return res.status(401).json({ error: "รหัสผ่านไม่ถูกต้อง" });
+      } else {
+        // No hash stored — check against env/default, then store it
+        if (password !== envAdminPassword) {
+          return res.status(401).json({ error: "รหัสผ่านไม่ถูกต้อง" });
+        }
+        try {
+          const hash = await bcrypt.hash(password, 10);
+          await prisma.controlState.upsert({
+            where: { id: 1 },
+            update: { adminPasswordHash: hash },
+            create: { adminPasswordHash: hash },
+          });
+        } catch { /* ignore hash store failure on first login */ }
+      }
+
+      const token = jwt.sign({ role: "admin" }, ADMIN_SECRET, { expiresIn: "12h" });
+
+      res.setHeader(
+        "Set-Cookie",
+        cookie.serialize("admin_token", token, {
+          httpOnly: true,
+          secure: false,
+          sameSite: "lax",
+          path: "/",
+          maxAge: 60 * 60 * 12,
+        })
+      );
+
+      return res.status(200).json({ ok: true, token });
+    } catch (err: any) {
+      console.error("Admin login error:", err);
+      return res.status(500).json({ error: "เกิดข้อผิดพลาดภายในระบบ กรุณาลองใหม่อีกครั้ง" });
     }
-
-    const token = jwt.sign({ role: "admin" }, ADMIN_SECRET, { expiresIn: "12h" });
-
-    res.setHeader(
-      "Set-Cookie",
-      cookie.serialize("admin_token", token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        path: "/",
-        maxAge: 60 * 60 * 12,
-      })
-    );
-
-    return res.status(200).json({ ok: true, token });
   }
 
   // GET — verify current admin session
