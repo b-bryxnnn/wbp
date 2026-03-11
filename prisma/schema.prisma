@@ -1,0 +1,106 @@
+// Prisma schema for real-time voting app
+// Models: User, School, Motion, Vote, AuditLog, Attendance
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model School {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  qrCode    String   @unique // QR code for login display text
+  loginToken String  @unique // ใช้ใน QR สำหรับเข้าสู่ระบบ
+  users     User[]
+  attendance Attendance[]
+  votes     Vote[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  schoolId  Int
+  school    School   @relation(fields: [schoolId], references: [id])
+  role      UserRole @default(STUDENT)
+  votes     Vote[]
+  attendance Attendance[]
+  auditLogs AuditLog[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum UserRole {
+  STUDENT
+  ADMIN
+}
+
+model Motion {
+  id        Int      @id @default(autoincrement())
+  title     String
+  description String
+  createdAt DateTime @default(now())
+  isActive  Boolean  @default(false)
+  votes     Vote[]
+  auditLogs AuditLog[]
+  updatedAt DateTime @updatedAt
+}
+
+model Vote {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  motionId  Int
+  motion    Motion   @relation(fields: [motionId], references: [id])
+  schoolId  Int
+  school    School   @relation(fields: [schoolId], references: [id])
+  choice    VoteChoice
+  createdAt DateTime @default(now())
+  @@unique([userId, motionId])
+}
+
+enum VoteChoice {
+  AGREE
+  DISAGREE
+  ABSTAIN
+}
+
+model Attendance {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  schoolId  Int
+  school    School   @relation(fields: [schoolId], references: [id])
+  checkedIn Boolean  @default(false)
+  checkedInAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@unique([schoolId, userId])
+}
+
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  motionId  Int?
+  motion    Motion?  @relation(fields: [motionId], references: [id])
+  action    String
+  timestamp DateTime @default(now())
+  details   String?
+  @@index([timestamp])
+}
+
+model ControlState {
+  id              Int       @id @default(1)
+  bigScreenMessage String    @default("ขอต้อนรับเข้าสู่ระบบโหวต")
+  votingOpen      Boolean   @default(false)
+  activeMotionId  Int?
+  countdownEnd    DateTime?
+  updatedAt       DateTime  @updatedAt
+}
+
