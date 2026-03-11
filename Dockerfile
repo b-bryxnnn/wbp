@@ -35,13 +35,13 @@ COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
 # Startup: wait for DB → push schema → seed → start server
 EXPOSE 3000
 CMD ["sh", "-c", "\
-  echo 'Waiting for database...' && \
+  echo '=== Waiting for database ===' && \
   for i in 1 2 3 4 5 6 7 8 9 10; do \
     npx prisma db push --skip-generate && break; \
     echo \"DB not ready (attempt $i/10), retrying in 3s...\"; \
     sleep 3; \
   done && \
-  echo 'Running seed...' && \
-  (node prisma/seed.js &) && \
-  echo 'Starting server...' && \
+  echo '=== Seeding database ===' && \
+  node prisma/seed.js && \
+  echo '=== Starting server ===' && \
   node server.js"]
