@@ -19,6 +19,9 @@ COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 # Copy prisma schema for migrations
 COPY --from=builder /app/prisma ./prisma
+# Ensure Prisma client engine is included
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 
 EXPOSE 3000
 CMD ["node", "server.js"]
