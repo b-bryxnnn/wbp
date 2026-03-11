@@ -54,6 +54,8 @@ export default function VotePage() {
   const [geoRetrying, setGeoRetrying] = useState(false);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const toastIdRef = useRef(0);
+  const [showVoteConfirmation, setShowVoteConfirmation] = useState(false);
+  const voteConfirmTimerRef = useRef<NodeJS.Timeout | null>(null);
   const router = useRouter();
 
   const pushToast = useCallback((type: Toast["type"], message: string) => {
@@ -116,10 +118,13 @@ export default function VotePage() {
         localStorage.removeItem("auth_token"); localStorage.removeItem("session_token");
       });
       s.io.on("error", () => pushToast("error", "เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ ลองรีเฟรชหรือตรวจสอบอินเทอร์เน็ต"));
-      s.on("connect_error", () => pushToast("error", "เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ ลองรีเฟรช"));
+      s.on("connect_error", (err: any) => {
+        console.warn("socket connect error", err?.message);
+        pushToast("error", "เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ ลองรีเฟรช");
+      });
       return () => { s.disconnect(); };
     });
-  }, []);
+  }, [pushToast]);
 
   // Heartbeat — send every 10 seconds to stay "online"
   useEffect(() => {
@@ -150,7 +155,13 @@ export default function VotePage() {
         const res = await fetch(url);
         if (!res.ok) {
           const data = await res.json().catch(() => ({}));
-          if (data.error) { setLoginError(data.error); pushToast("error", data.error); }
+          const msg = data.error || (res.status === 401 ? "QR Code ไม่ถูกต้องหรือหมดอายุ" : "เข้าสู่ระบบด้วย QR ไม่สำเร็จ");
+          if (res.status === 401) {
+            localStorage.removeItem("auth_token");
+            localStorage.removeItem("session_token");
+          }
+          setLoginError(msg);
+          pushToast("error", msg);
           return;
         }
         const data = await res.json();
@@ -205,14 +216,23 @@ export default function VotePage() {
 
   const castVote = (choice: VoteChoice) => {
     if (!socket || !activeMotion || !authToken) return;
-    pushToast("info", "กำลังส่งผลการลงมติ...");
     socket.emit("vote:cast", {
       motionId: activeMotion.id, choice, authToken,
       schoolId: schoolId ? Number(schoolId) : undefined, voter,
     });
     setVoted(choice);
-    pushToast("success", "บันทึกผลโหวตแล้ว");
+    setShowVoteConfirmation(true);
+    if (voteConfirmTimerRef.current) clearTimeout(voteConfirmTimerRef.current);
+    voteConfirmTimerRef.current = setTimeout(() => {
+      setShowVoteConfirmation(false);
+    }, 1800);
   };
+
+  useEffect(() => {
+    return () => {
+      if (voteConfirmTimerRef.current) clearTimeout(voteConfirmTimerRef.current);
+    };
+  }, []);
 
   const currentSchool = state.schools.find((s) => s.id === schoolId);
   const schoolName = currentSchool?.name;
@@ -283,14 +303,11 @@ export default function VotePage() {
 
       {/* Closed overlay when voting is off */}
       {stateLoaded && !state.votingOpen && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-gradient-to-b from-[#0f0a05]/92 to-[#1b1208]/96 px-6 text-center">
-          <div className="max-w-2xl mx-auto">
-            <div className="w-28 h-28 rounded-full border-4 border-gold-300 bg-black/40 flex items-center justify-center mx-auto mb-6 shadow-2xl shadow-black/40">
-              <Lock size={42} className="text-gold-400" />
-            </div>
-            <div className="text-3xl md:text-4xl font-extrabold text-white mb-3">ปิดรับโหวต</div>
-            <div className="text-lg md:text-xl text-gold-200 leading-relaxed">
-              {state.bigScreenMessage || "โปรดรอการเปิดโหวตรอบถัดไป"}
+        <div className="closed-overlay">
+          <div className="max-w-2xl mx-auto space-y-3">
+            <div className="text-3xl md:text-4xl font-extrabold text-royal-900">ปิดรับโหวต</div>
+            <div className="text-lg md:text-xl text-royal-600 leading-relaxed">
+              {state.bigScreenMessage || "โปรดรอผู้ดูแลระบบเปิดรอบถัดไป"}
             </div>
           </div>
         </div>
@@ -396,30 +413,36 @@ export default function VotePage() {
             </div>
 
             {state.votingOpen ? (
-              voted ? (
+              showVoteConfirmation ? (
                 <div className="text-center py-8 animate-scale-in">
                   <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
                     <CheckCircle size={48} className="text-green-600" />
                   </div>
-                  <div className="text-xl font-bold text-green-700 mb-1">ลงมติเรียบร้อยแล้ว</div>
+                  <div className="text-xl font-bold text-green-700 mb-1">บันทึกผลโหวตแล้ว</div>
                   <div className="text-sm text-royal-400 mt-1">
-                    คุณเลือก: <span className="font-semibold">{CHOICE_META[voted]?.label || voted}</span>
+                    คุณเลือก: <span className="font-semibold">{CHOICE_META[voted || ""]?.label || voted}</span>
                   </div>
-                  <button className="mt-6 text-xs text-royal-400 hover:text-gold-600 underline flex items-center gap-1 mx-auto transition-colors" onClick={() => setVoted(null)}>
-                    <Edit3 size={12} /> ต้องการแก้ไขผลการโหวต?
-                  </button>
                 </div>
               ) : (
                 <div className="grid gap-3">
                   {allowedChoices.map((choice) => {
                     const meta = CHOICE_META[choice];
                     if (!meta) return null;
+                    const selected = voted === choice;
                     return (
-                      <button key={choice} className={`${meta.btnClass} text-white px-6 py-5 rounded-xl font-bold text-lg flex items-center justify-center gap-3`} onClick={() => castVote(choice as VoteChoice)}>
+                      <button
+                        key={choice}
+                        className={`${meta.btnClass} ${selected ? "vote-btn-selected" : ""} text-white px-6 py-5 rounded-xl font-bold text-lg flex items-center justify-center gap-3`}
+                        onClick={() => castVote(choice as VoteChoice)}
+                      >
                         <meta.Icon size={24} /> {meta.label}
+                        {selected && <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full">เลือกแล้ว</span>}
                       </button>
                     );
                   })}
+                  {voted && (
+                    <div className="text-center text-xs text-royal-400">กดปุ่มอื่นเพื่อปรับผลโหวต</div>
+                  )}
                 </div>
               )
             ) : (
