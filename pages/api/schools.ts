@@ -1,7 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import prisma from "../../lib/prisma";
+import { verifyAdmin } from "../../lib/adminAuth";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (!verifyAdmin(req, res)) return;
+
   try {
     const schools = await prisma.school.findMany({
       orderBy: { id: "asc" },

@@ -137,11 +137,19 @@ export default function Admin() {
   useEffect(() => {
     if (!authed) return;
     fetch("/api/schools")
-      .then((r) => { if (!r.ok) throw new Error(r.statusText); return r.json(); })
+      .then((r) => {
+        if (r.status === 401) { setAuthed(false); throw new Error("Unauthorized"); }
+        if (!r.ok) throw new Error(r.statusText);
+        return r.json();
+      })
       .then((data) => setSchools(data.schools || []))
       .catch((e) => console.error("Failed to load schools:", e));
     fetch("/api/admin/login-mode")
-      .then((r) => { if (!r.ok) throw new Error(r.statusText); return r.json(); })
+      .then((r) => {
+        if (r.status === 401) { setAuthed(false); throw new Error("Unauthorized"); }
+        if (!r.ok) throw new Error(r.statusText);
+        return r.json();
+      })
       .then((data) => setLoginMode(data.loginMode))
       .catch((e) => console.error("Failed to load login-mode:", e));
   }, [authed]);
@@ -362,7 +370,7 @@ export default function Admin() {
                     </div>
                   )}
                   {state.attendance[s.id] ? <CheckCircle size={14} className="text-green-600 flex-shrink-0" /> : <Square size={14} className="flex-shrink-0" />}
-                  <span className="leading-tight text-xs">{s.name}</span>
+                  <span className="leading-snug text-sm break-words">{s.name}</span>
                 </div>
               ))}
             </div>

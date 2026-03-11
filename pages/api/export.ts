@@ -3,6 +3,7 @@ import prisma from "../../lib/prisma";
 import XLSX from "xlsx";
 import PDFDocument from "pdfkit";
 import { Readable } from "stream";
+import { verifyAdmin } from "../../lib/adminAuth";
 
 export const config = {
   api: {
@@ -61,6 +62,8 @@ function exportPdf(data: Awaited<ReturnType<typeof buildData>>) {
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (!verifyAdmin(req, res)) return;
+
   const { type } = req.query; // pdf | excel
   const data = await buildData();
 

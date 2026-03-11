@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import prisma from "../../../lib/prisma";
 import bcrypt from "bcryptjs";
 import { randomBytes } from "crypto";
+import { verifyAdmin } from "../../../lib/adminAuth";
 
 function generateUsername(prefix: string, index: number): string {
   const slug = prefix.replace(/[^a-zA-Z0-9ก-๙]/g, "").slice(0, 10);
@@ -19,6 +20,7 @@ function generatePassword(): string {
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") return res.status(405).end();
+  if (!verifyAdmin(req, res)) return;
 
   try {
     const control = await prisma.controlState.findUnique({ where: { id: 1 } });
