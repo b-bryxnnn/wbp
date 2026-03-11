@@ -15,12 +15,12 @@ export default function Export() {
       </div>
 
       <div className="card-royal space-y-4">
-        <a href="/api/export?type=pdf" className="btn-gold w-full text-center flex items-center justify-center gap-2.5 py-4 text-lg group">
-          <FileText size={22} /> Export PDF
+        <a href="/api/export?type=excel" className="btn-gold w-full text-center flex items-center justify-center gap-2.5 py-4 text-lg group">
+          <FileSpreadsheet size={22} /> ดาวน์โหลด CSV (เปิดใน Excel ได้)
           <Download size={16} className="ml-auto opacity-50 group-hover:opacity-100 transition-opacity" />
         </a>
-        <a href="/api/export?type=excel" className="btn-outline-gold w-full text-center flex items-center justify-center gap-2.5 py-4 text-lg group">
-          <FileSpreadsheet size={22} /> Export Excel
+        <a href="/api/export?type=text" className="btn-outline-gold w-full text-center flex items-center justify-center gap-2.5 py-4 text-lg group">
+          <FileText size={22} /> ดาวน์โหลดรายงาน (Text)
           <Download size={16} className="ml-auto opacity-50 group-hover:opacity-100 transition-opacity" />
         </a>
       </div>

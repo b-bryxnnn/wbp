@@ -18,6 +18,8 @@ model School {
   username     String?  @unique
   passwordHash String?
   logoUrl      String?
+  loginIp      String?
+  sessionToken String?
   users        User[]
   attendance   Attendance[]
   votes        Vote[]

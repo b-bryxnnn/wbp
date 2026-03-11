@@ -4,10 +4,10 @@ import bcrypt from "bcryptjs";
 import { randomBytes } from "crypto";
 import { verifyAdmin } from "../../../lib/adminAuth";
 
+// English-only username: school1_ab3f, school2_c4d1, etc.
 function generateUsername(prefix: string, index: number): string {
-  const slug = prefix.replace(/[^a-zA-Z0-9ก-๙]/g, "").slice(0, 10);
   const rand = randomBytes(2).toString("hex");
-  return `${slug}-${rand}`;
+  return `${prefix}${index}_${rand}`;
 }
 
 function generatePassword(): string {
@@ -20,29 +20,31 @@ function generatePassword(): string {
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") return res.status(405).end();
-  if (!verifyAdmin(req, res)) return;
+  if (!(await verifyAdmin(req, res))) return;
 
   try {
     const control = await prisma.controlState.findUnique({ where: { id: 1 } });
     const loginMode = control?.loginMode || "PER_SCHOOL";
-    const results: { name: string; username: string; password: string; type: string }[] = [];
+    const results: { name: string; username: string; password: string; type: string; qrToken: string }[] = [];
 
     if (loginMode === "PER_SCHOOL") {
       const schools = await prisma.school.findMany({ orderBy: { id: "asc" } });
       for (const school of schools) {
-        const username = generateUsername(school.name, school.id);
+        const username = generateUsername("school", school.id);
         const password = generatePassword();
         const hash = await bcrypt.hash(password, 10);
+        // Also regenerate loginToken for QR code
+        const loginToken = randomBytes(12).toString("hex");
         await prisma.school.update({
           where: { id: school.id },
-          data: { username, passwordHash: hash },
+          data: { username, passwordHash: hash, loginToken },
         });
-        results.push({ name: school.name, username, password, type: "school" });
+        results.push({ name: school.name, username, password, type: "school", qrToken: loginToken });
       }
     } else {
       const users = await prisma.user.findMany({ include: { school: true }, orderBy: { id: "asc" } });
       for (const user of users) {
-        const username = generateUsername(user.name, user.id);
+        const username = generateUsername("user", user.id);
         const password = generatePassword();
         const hash = await bcrypt.hash(password, 10);
         const qrToken = randomBytes(16).toString("hex");
@@ -50,7 +52,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           where: { id: user.id },
           data: { username, passwordHash: hash, loginQrToken: qrToken },
         });
-        results.push({ name: `${user.name} (${user.school.name})`, username, password, type: "user" });
+        results.push({ name: `${user.name} (${user.school.name})`, username, password, type: "user", qrToken });
       }
     }
 
@@ -60,4 +62,3 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(500).json({ error: "สร้างข้อมูลล็อกอินไม่สำเร็จ", detail: err.message });
   }
 }
-

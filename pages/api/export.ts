@@ -1,86 +1,124 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import prisma from "../../lib/prisma";
-import XLSX from "xlsx";
-import PDFDocument from "pdfkit";
-import { Readable } from "stream";
 import { verifyAdmin } from "../../lib/adminAuth";
 
-export const config = {
-  api: {
-    responseLimit: false,
-  },
-};
+export const config = { api: { responseLimit: false } };
 
 async function buildData() {
-  const motions = await prisma.motion.findMany({ include: { votes: { include: { user: true, school: true } } }, orderBy: { createdAt: "asc" } });
-  const attendance = await prisma.attendance.findMany({ where: { checkedIn: true }, include: { user: true, school: true } });
-  return { motions, attendance };
+  const motions = await prisma.motion.findMany({
+    include: { votes: { include: { user: true, school: true } } },
+    orderBy: { createdAt: "asc" },
+  });
+  const attendance = await prisma.attendance.findMany({
+    where: { checkedIn: true },
+    include: { user: true, school: true },
+  });
+  const schools = await prisma.school.findMany({ orderBy: { id: "asc" } });
+  return { motions, attendance, schools };
 }
 
-function exportExcel(data: Awaited<ReturnType<typeof buildData>>) {
-  const wb = XLSX.utils.book_new();
-
-  const motionRows = data.motions.flatMap((m) =>
-    m.votes.map((v) => ({ Motion: m.title, Choice: v.choice, School: v.school.name, Voter: v.user.name, At: v.createdAt }))
-  );
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(motionRows), "Votes");
-
-  const attendanceRows = data.attendance.map((a) => ({ School: a.school.name, User: a.user.name, CheckedInAt: a.checkedInAt }));
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(attendanceRows), "Attendance");
-
-  return XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+/** Escape a value for CSV (handle commas, quotes, newlines) */
+function csvEscape(val: string | number | null | undefined): string {
+  const s = String(val ?? "");
+  if (s.includes(",") || s.includes('"') || s.includes("\n")) {
+    return `"${s.replace(/"/g, '""')}"`;
+  }
+  return s;
 }
 
-function exportPdf(data: Awaited<ReturnType<typeof buildData>>) {
-  const doc = new PDFDocument({ margin: 40 });
-  const stream = new Readable({ read() {} });
-  doc.pipe(stream);
+function csvRow(cells: (string | number | null | undefined)[]): string {
+  return cells.map(csvEscape).join(",");
+}
 
-  doc.fontSize(18).text("รายงานผลการประชุม/ลงมติ", { underline: true });
-  doc.moveDown();
+function exportCsv(data: Awaited<ReturnType<typeof buildData>>) {
+  const BOM = "\uFEFF"; // UTF-8 BOM for Excel to detect Thai encoding
+  const lines: string[] = [];
 
+  // Sheet 1: Summary
+  lines.push(csvRow(["ญัตติ", "รายละเอียด", "เห็นด้วย", "ไม่เห็นด้วย", "งดออกเสียง", "รวม", "ผลลัพธ์"]));
   data.motions.forEach((m) => {
-    doc.fontSize(14).text(`ญัตติ: ${m.title}`);
-    doc.fontSize(12).text(`รายละเอียด: ${m.description}`);
-    const counts = { AGREE: 0, DISAGREE: 0, ABSTAIN: 0 } as Record<string, number>;
-    m.votes.forEach((v) => counts[v.choice]++);
-    doc.text(`สรุป: เห็นด้วย ${counts.AGREE}, ไม่เห็นด้วย ${counts.DISAGREE}, งดออกเสียง ${counts.ABSTAIN}`);
-    doc.moveDown(0.5);
-    m.votes.forEach((v) => doc.text(`- ${v.school.name} (${v.user.name}): ${v.choice}`));
-    doc.moveDown();
+    const c = { AGREE: 0, DISAGREE: 0, ABSTAIN: 0 } as Record<string, number>;
+    m.votes.forEach((v) => c[v.choice]++);
+    const total = c.AGREE + c.DISAGREE + c.ABSTAIN;
+    const result = c.AGREE > c.DISAGREE ? "ผ่าน" : c.AGREE < c.DISAGREE ? "ไม่ผ่าน" : "เท่ากัน";
+    lines.push(csvRow([m.title, m.description, c.AGREE, c.DISAGREE, c.ABSTAIN, total, result]));
   });
 
-  doc.addPage();
-  doc.fontSize(16).text("เช็คชื่อ (Attendance)", { underline: true });
+  lines.push("");
+  lines.push(csvRow(["--- รายละเอียดการโหวต ---"]));
+  lines.push(csvRow(["ญัตติ", "โรงเรียน", "ผู้โหวต", "เลือก", "เวลา"]));
+  data.motions.forEach((m) => {
+    m.votes.forEach((v) => {
+      const choice = v.choice === "AGREE" ? "เห็นด้วย" : v.choice === "DISAGREE" ? "ไม่เห็นด้วย" : "งดออกเสียง";
+      lines.push(csvRow([m.title, v.school.name, v.user.name, choice, v.createdAt.toISOString()]));
+    });
+  });
+
+  lines.push("");
+  lines.push(csvRow(["--- การเข้าร่วม ---"]));
+  lines.push(csvRow(["โรงเรียน", "ผู้แทน", "เวลาเช็คชื่อ"]));
   data.attendance.forEach((a) => {
-    doc.fontSize(12).text(`- ${a.school.name} (${a.user.name}) เวลา ${a.checkedInAt?.toISOString() ?? ""}`);
+    lines.push(csvRow([a.school.name, a.user.name, a.checkedInAt?.toISOString() ?? ""]));
   });
 
-  doc.end();
+  lines.push("");
+  lines.push(csvRow(["--- IP Log ---"]));
+  lines.push(csvRow(["โรงเรียน", "IP Address"]));
+  (data.schools as any[]).forEach((s) => {
+    lines.push(csvRow([s.name, s.loginIp || "-"]));
+  });
 
-  return stream;
+  return BOM + lines.join("\r\n");
+}
+
+function exportText(data: Awaited<ReturnType<typeof buildData>>) {
+  const lines: string[] = [];
+  lines.push("=== สรุปผลมติ — สหวิทยาเขตวชิรบูรพา ===");
+  lines.push("");
+  data.motions.forEach((m) => {
+    const c = { AGREE: 0, DISAGREE: 0, ABSTAIN: 0 } as Record<string, number>;
+    m.votes.forEach((v) => c[v.choice]++);
+    lines.push(`ญัตติ: ${m.title}`);
+    lines.push(`รายละเอียด: ${m.description}`);
+    lines.push(`เห็นด้วย: ${c.AGREE}, ไม่เห็นด้วย: ${c.DISAGREE}, งดออกเสียง: ${c.ABSTAIN}`);
+    lines.push(`ผล: ${c.AGREE > c.DISAGREE ? "ผ่าน" : c.AGREE < c.DISAGREE ? "ไม่ผ่าน" : "เท่ากัน"}`);
+    m.votes.forEach((v) => {
+      lines.push(`  - ${v.school.name} (${v.user.name}): ${v.choice}`);
+    });
+    lines.push("");
+  });
+  lines.push("=== การเข้าร่วม ===");
+  data.attendance.forEach((a) => {
+    lines.push(`- ${a.school.name} (${a.user.name}) เวลา ${a.checkedInAt?.toISOString() ?? ""}`);
+  });
+  return lines.join("\n");
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (!verifyAdmin(req, res)) return;
+  if (!(await verifyAdmin(req, res))) return;
 
-  const { type } = req.query; // pdf | excel
-  const data = await buildData();
+  try {
+    const { type } = req.query;
+    const data = await buildData();
 
-  if (type === "excel") {
-    const buffer = exportExcel(data);
-    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-    res.setHeader("Content-Disposition", "attachment; filename=report.xlsx");
-    return res.status(200).send(buffer);
+    if (type === "excel" || type === "csv") {
+      // CSV with BOM — opens correctly in Excel with Thai text
+      const csv = exportCsv(data);
+      res.setHeader("Content-Type", "text/csv; charset=utf-8");
+      res.setHeader("Content-Disposition", "attachment; filename=report.csv");
+      return res.status(200).send(csv);
+    }
+
+    if (type === "pdf" || type === "text") {
+      const text = exportText(data);
+      res.setHeader("Content-Type", "text/plain; charset=utf-8");
+      res.setHeader("Content-Disposition", "attachment; filename=report.txt");
+      return res.status(200).send(text);
+    }
+
+    return res.status(400).json({ error: "Invalid export type. Use ?type=excel or ?type=text" });
+  } catch (err: any) {
+    console.error("Export error:", err);
+    return res.status(500).json({ error: "ส่งออกข้อมูลไม่สำเร็จ: " + err.message });
   }
-
-  if (type === "pdf") {
-    const pdfStream = exportPdf(data);
-    res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Content-Disposition", "attachment; filename=report.pdf");
-    pdfStream.pipe(res);
-    return;
-  }
-
-  return res.status(400).json({ error: "Invalid export type" });
 }

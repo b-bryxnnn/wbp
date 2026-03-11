@@ -1,24 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { io, Socket } from "socket.io-client";
-import dynamic from "next/dynamic";
 import { useRouter } from "next/router";
 import {
-  Vote as VoteIcon,
-  School,
-  User,
-  QrCode,
-  LogIn,
-  ThumbsUp,
-  ThumbsDown,
-  Hand,
-  CheckCircle,
-  Clock,
-  Inbox,
-  ClipboardList,
-  Lock,
+  Vote as VoteIcon, School, User, QrCode, LogIn,
+  ThumbsUp, ThumbsDown, Hand, CheckCircle, Clock, Inbox,
+  ClipboardList, Lock, AlertTriangle,
 } from "lucide-react";
 
-const QRCode = dynamic(() => import("react-qr-code"), { ssr: false });
 
 type VoteChoice = "AGREE" | "DISAGREE" | "ABSTAIN";
 type Motion = { id: number; title: string; description: string; isActive: boolean };
@@ -41,21 +29,42 @@ export default function VotePage() {
   const [schoolId, setSchoolId] = useState<number | "">("");
   const [voter, setVoter] = useState("");
   const [authToken, setAuthToken] = useState<string | null>(null);
+  const [sessionToken, setSessionToken] = useState<string | null>(null);
   const [voted, setVoted] = useState<string | null>(null);
   const [loginTab, setLoginTab] = useState<"qr" | "password">("qr");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
   const [loginLoading, setLoginLoading] = useState(false);
+  const [kicked, setKicked] = useState<string | null>(null);
   const router = useRouter();
 
+  // Setup socket connection
   useEffect(() => {
-    const s = io({ path: "/api/socket", transports: ["websocket", "polling"] });
+    const s = io({ path: "/api/socket", transports: ["polling"] });
     setSocket(s);
     s.on("state:update", (data: State) => { setState(data); setVoted(null); });
+    // Listen for session invalidation (another device logged in)
+    s.on("session:invalid", (data: { reason: string }) => {
+      setKicked(data.reason || "เซสชันหมดอายุ");
+      setAuthToken(null);
+      setSessionToken(null);
+      setSchoolId("");
+      setVoter("");
+      localStorage.removeItem("auth_token");
+      localStorage.removeItem("session_token");
+    });
     return () => { s.disconnect(); };
   }, []);
 
+  // Identify to server when we have auth info
+  useEffect(() => {
+    if (socket && schoolId && sessionToken) {
+      socket.emit("auth:identify", { schoolId: Number(schoolId), sessionToken });
+    }
+  }, [socket, schoolId, sessionToken]);
+
+  // QR token login
   useEffect(() => {
     const token = (router.query.token as string) || localStorage.getItem("auth_token") || null;
     if (!token) return;
@@ -65,14 +74,17 @@ export default function VotePage() {
         if (!res.ok) return;
         const data = await res.json();
         setAuthToken(data.token);
+        setSessionToken(data.sessionToken);
         localStorage.setItem("auth_token", data.token);
+        localStorage.setItem("session_token", data.sessionToken);
         setSchoolId(data.school.id);
         setVoter(data.user.name);
+        setKicked(null);
       } catch (e) {
         console.error(e);
       }
     };
-    login();
+    void login();
   }, [router.query.token]);
 
   const handlePasswordLogin = async () => {
@@ -85,14 +97,14 @@ export default function VotePage() {
         body: JSON.stringify({ username, password }),
       });
       const data = await res.json();
-      if (!res.ok) {
-        setLoginError(data.error || "เข้าสู่ระบบไม่สำเร็จ");
-        return;
-      }
+      if (!res.ok) { setLoginError(data.error || "เข้าสู่ระบบไม่สำเร็จ"); return; }
       setAuthToken(data.token);
+      setSessionToken(data.sessionToken);
       localStorage.setItem("auth_token", data.token);
+      localStorage.setItem("session_token", data.sessionToken);
       setSchoolId(data.school.id);
       setVoter(data.user.name);
+      setKicked(null);
     } catch {
       setLoginError("เกิดข้อผิดพลาดในการเชื่อมต่อ");
     } finally {
@@ -142,27 +154,29 @@ export default function VotePage() {
         )}
       </div>
 
-      {/* Login section - show only if not logged in */}
+      {/* Kicked notification */}
+      {kicked && (
+        <div className="card-royal mb-6 border-red-300 bg-red-50">
+          <div className="flex items-center gap-3 text-red-700">
+            <AlertTriangle size={20} />
+            <div>
+              <div className="font-semibold">ถูกบังคับออกจากระบบ</div>
+              <div className="text-sm">{kicked}</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Login section */}
       {!schoolId && (
         <div className="card-royal mb-6">
           <h3 className="section-title mb-4"><LogIn size={16} className="text-gold-600" /> เข้าสู่ระบบ</h3>
 
-          {/* Login tabs */}
           <div className="flex border-b border-gold/20 mb-5">
-            <button
-              className={`flex-1 py-3 text-sm font-semibold flex items-center justify-center gap-1.5 border-b-2 transition-colors ${
-                loginTab === "qr" ? "border-gold-500 text-gold-700" : "border-transparent text-royal-400 hover:text-royal-600"
-              }`}
-              onClick={() => setLoginTab("qr")}
-            >
+            <button className={`flex-1 py-3 text-sm font-semibold flex items-center justify-center gap-1.5 border-b-2 transition-colors ${loginTab === "qr" ? "border-gold-500 text-gold-700" : "border-transparent text-royal-400 hover:text-royal-600"}`} onClick={() => setLoginTab("qr")}>
               <QrCode size={15} /> สแกน QR Code
             </button>
-            <button
-              className={`flex-1 py-3 text-sm font-semibold flex items-center justify-center gap-1.5 border-b-2 transition-colors ${
-                loginTab === "password" ? "border-gold-500 text-gold-700" : "border-transparent text-royal-400 hover:text-royal-600"
-              }`}
-              onClick={() => setLoginTab("password")}
-            >
+            <button className={`flex-1 py-3 text-sm font-semibold flex items-center justify-center gap-1.5 border-b-2 transition-colors ${loginTab === "password" ? "border-gold-500 text-gold-700" : "border-transparent text-royal-400 hover:text-royal-600"}`} onClick={() => setLoginTab("password")}>
               <Lock size={15} /> ชื่อผู้ใช้ / รหัสผ่าน
             </button>
           </div>
@@ -180,34 +194,16 @@ export default function VotePage() {
             <div className="space-y-3">
               <div className="relative">
                 <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-royal-300 pointer-events-none" />
-                <input
-                  className="input-royal !pl-10"
-                  placeholder="ชื่อผู้ใช้"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                />
+                <input className="input-royal !pl-10" placeholder="ชื่อผู้ใช้" value={username} onChange={(e) => setUsername(e.target.value)} />
               </div>
               <div className="relative">
                 <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-royal-300 pointer-events-none" />
-                <input
-                  className="input-royal !pl-10"
-                  placeholder="รหัสผ่าน"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handlePasswordLogin()}
-                />
+                <input className="input-royal !pl-10" placeholder="รหัสผ่าน" type="password" value={password} onChange={(e) => setPassword(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handlePasswordLogin()} />
               </div>
               {loginError && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700 text-center">
-                  {loginError}
-                </div>
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700 text-center">{loginError}</div>
               )}
-              <button
-                className="btn-gold w-full flex items-center justify-center gap-2 py-3"
-                onClick={handlePasswordLogin}
-                disabled={loginLoading}
-              >
+              <button className="btn-gold w-full flex items-center justify-center gap-2 py-3" onClick={handlePasswordLogin} disabled={loginLoading}>
                 <LogIn size={16} /> {loginLoading ? "กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบ"}
               </button>
             </div>
@@ -220,12 +216,9 @@ export default function VotePage() {
         <h3 className="section-title mb-4"><ClipboardList size={16} className="text-gold-600" /> ลงมติ</h3>
         {activeMotion ? (
           <div className="space-y-5">
-            {/* Motion Info */}
             <div className="bg-gradient-to-br from-cream-50 to-cream-100 border border-gold/20 rounded-xl p-6 text-center">
               <div className="text-xl font-extrabold text-royal-900 mb-2">{activeMotion.title}</div>
-              {activeMotion.description && (
-                <div className="text-sm text-royal-500">{activeMotion.description}</div>
-              )}
+              {activeMotion.description && <div className="text-sm text-royal-500">{activeMotion.description}</div>}
             </div>
 
             {state.votingOpen ? (
@@ -241,22 +234,13 @@ export default function VotePage() {
                 </div>
               ) : (
                 <div className="grid gap-3">
-                  <button
-                    className="vote-btn vote-btn-agree text-white px-6 py-5 rounded-xl font-bold text-lg flex items-center justify-center gap-3"
-                    onClick={() => castVote("AGREE")}
-                  >
+                  <button className="vote-btn vote-btn-agree text-white px-6 py-5 rounded-xl font-bold text-lg flex items-center justify-center gap-3" onClick={() => castVote("AGREE")}>
                     <ThumbsUp size={24} /> เห็นด้วย
                   </button>
-                  <button
-                    className="vote-btn vote-btn-disagree text-white px-6 py-5 rounded-xl font-bold text-lg flex items-center justify-center gap-3"
-                    onClick={() => castVote("DISAGREE")}
-                  >
+                  <button className="vote-btn vote-btn-disagree text-white px-6 py-5 rounded-xl font-bold text-lg flex items-center justify-center gap-3" onClick={() => castVote("DISAGREE")}>
                     <ThumbsDown size={24} /> ไม่เห็นด้วย
                   </button>
-                  <button
-                    className="vote-btn vote-btn-abstain text-white px-6 py-5 rounded-xl font-bold text-lg flex items-center justify-center gap-3"
-                    onClick={() => castVote("ABSTAIN")}
-                  >
+                  <button className="vote-btn vote-btn-abstain text-white px-6 py-5 rounded-xl font-bold text-lg flex items-center justify-center gap-3" onClick={() => castVote("ABSTAIN")}>
                     <Hand size={24} /> งดออกเสียง
                   </button>
                 </div>

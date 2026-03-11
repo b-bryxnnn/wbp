@@ -1,10 +1,27 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import prisma from "../../../lib/prisma";
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
+import { SignJWT, jwtVerify } from "jose";
 import cookie from "cookie";
 
-const ADMIN_SECRET = process.env.JWT_SECRET || "dev-secret";
+const ADMIN_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || "dev-secret");
+
+async function signAdmin(): Promise<string> {
+  return new SignJWT({ role: "admin" })
+    .setProtectedHeader({ alg: "HS256" })
+    .setExpirationTime("12h")
+    .setIssuedAt()
+    .sign(ADMIN_SECRET);
+}
+
+async function verifyAdminToken(token: string): Promise<boolean> {
+  try {
+    await jwtVerify(token, ADMIN_SECRET);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === "POST") {
@@ -27,7 +44,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       if (control?.adminPasswordHash) {
         // Verify against stored hash
-        const valid = await bcrypt.compare(password, control.adminPasswordHash);
+        const valid = await bcrypt.compare(password, control!.adminPasswordHash);
         if (!valid) return res.status(401).json({ error: "รหัสผ่านไม่ถูกต้อง" });
       } else {
         // No hash stored — check against env/default, then store it
@@ -44,7 +61,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         } catch { /* ignore hash store failure on first login */ }
       }
 
-      const token = jwt.sign({ role: "admin" }, ADMIN_SECRET, { expiresIn: "12h" });
+      const token = await signAdmin();
 
       res.setHeader(
         "Set-Cookie",
@@ -68,21 +85,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (req.method === "GET") {
     const token = req.cookies.admin_token;
     if (!token) return res.status(401).json({ ok: false });
-    try {
-      jwt.verify(token, ADMIN_SECRET);
-      return res.status(200).json({ ok: true });
-    } catch {
-      return res.status(401).json({ ok: false });
-    }
+    const ok = await verifyAdminToken(token);
+    return res.status(ok ? 200 : 401).json({ ok });
   }
 
   // PUT — change admin password
   if (req.method === "PUT") {
     const token = req.cookies.admin_token;
     if (!token) return res.status(401).json({ error: "ไม่ได้เข้าสู่ระบบ" });
-    try {
-      jwt.verify(token, ADMIN_SECRET);
-    } catch {
+    if (!(await verifyAdminToken(token))) {
       return res.status(401).json({ error: "session หมดอายุ" });
     }
 
@@ -103,4 +114,3 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   return res.status(405).end();
 }
-

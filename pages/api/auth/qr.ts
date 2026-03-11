@@ -2,12 +2,20 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import prisma from "../../../lib/prisma";
 import { authCookieName, signAuthToken } from "../../../lib/auth";
 import cookie from "cookie";
+import { randomBytes } from "crypto";
+
+function getClientIp(req: NextApiRequest): string {
+  const forwarded = req.headers["x-forwarded-for"];
+  if (typeof forwarded === "string") return forwarded.split(",")[0].trim();
+  return req.socket?.remoteAddress || "unknown";
+}
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "GET") return res.status(405).end();
   const token = req.query.token as string;
   if (!token) return res.status(400).json({ error: "missing token" });
 
+  const clientIp = getClientIp(req);
   const control = await prisma.controlState.findUnique({ where: { id: 1 } });
   const loginMode = control?.loginMode || "PER_SCHOOL";
 
@@ -15,7 +23,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const user = await prisma.user.findUnique({ where: { loginQrToken: token }, include: { school: true } });
     if (!user) return res.status(401).json({ error: "invalid token" });
 
-    const jwt = signAuthToken({ userId: user.id, schoolId: user.schoolId, name: user.name });
+    const sessionToken = randomBytes(16).toString("hex");
+    await prisma.school.update({
+      where: { id: user.schoolId },
+      data: { loginIp: clientIp, sessionToken } as any,
+    });
+
+    const jwt = await signAuthToken({ userId: user.id, schoolId: user.schoolId, name: user.name });
 
     res.setHeader(
       "Set-Cookie",
@@ -31,6 +45,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       user: { id: user.id, name: user.name, schoolId: user.schoolId },
       school: { id: user.school.id, name: user.school.name },
       token: jwt,
+      sessionToken,
     });
   }
 
@@ -38,8 +53,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const school = await prisma.school.findFirst({ where: { loginToken: token }, include: { users: true } });
   if (!school) return res.status(401).json({ error: "invalid token" });
 
+  const sessionToken = randomBytes(16).toString("hex");
+  await prisma.school.update({
+    where: { id: school.id },
+    data: { loginIp: clientIp, sessionToken } as any,
+  });
+
   const user = school.users[0] || (await prisma.user.create({ data: { name: `${school.name} Delegate`, schoolId: school.id } }));
-  const jwt = signAuthToken({ userId: user.id, schoolId: school.id, name: user.name });
+  const jwt = await signAuthToken({ userId: user.id, schoolId: school.id, name: user.name });
 
   res.setHeader(
     "Set-Cookie",
@@ -55,5 +76,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     user: { id: user.id, name: user.name, schoolId: user.schoolId },
     school: { id: school.id, name: school.name },
     token: jwt,
+    sessionToken,
   });
 }
