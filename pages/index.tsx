@@ -19,45 +19,41 @@ export default function Home() {
 	return (
 		<div className="animate-fade-in">
 			{/* Hero Section */}
-			<section
-				className="hero-gradient py-20 md:py-28 relative overflow-hidden"
-				style={{
-					backgroundImage: `linear-gradient(180deg, rgba(15,9,4,0.75), rgba(15,9,4,0.6)), url('https://scontent.fbkk12-1.fna.fbcdn.net/v/t39.30808-6/466664401_988322433330506_2614708189359165683_n.jpg?_nc_cat=101&ccb=1-7&_nc_sid=53a332&_nc_ohc=ubFFIckU-BcQ7kNvwFO9zcy&_nc_oc=Adl6rDbpo6VPLWpCBf9rMFwKrbmqAamKao4hEOJWAWLhRbqKuuANOo8_enEIr3jbCvxCjpSnoEBQrQJtyxW7afKD&_nc_zt=23&_nc_ht=scontent.fbkk12-1.fna&_nc_gid=6gnL6BvNK-WQJCu7uwOkmQ&_nc_ss=8&oh=00_Afwj9qmLZms-HdyVALkgUKzLAbykB-gDKDE8vETaTwNqsQ&oe=69B74673')`,
-					backgroundSize: "cover",
-					backgroundPosition: "center",
-				}}
-			>
+			<section className="hero-gradient py-20 md:py-28 relative overflow-hidden">
 				{/* Decorative elements */}
-				<div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/55" />
+				<div className="absolute inset-0 pointer-events-none">
+					<div className="absolute -left-32 top-10 w-80 h-80 rounded-full bg-gold/10 blur-3xl" />
+					<div className="absolute right-[-10%] bottom-[-10%] w-[420px] h-[420px] rounded-full bg-gold/8 blur-3xl" />
+				</div>
 				<div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-gold to-transparent" />
 
 				<div className="max-w-4xl mx-auto px-4 text-center relative">
 					{/* Emblem */}
 					<div className="mx-auto mb-8">
-						<div className="w-28 h-28 md:w-32 md:h-32 rounded-full bg-white shadow-xl border-4 border-gold/20 flex items-center justify-center mx-auto">
+						<div className="w-28 h-28 md:w-32 md:h-32 rounded-full bg-white/95 shadow-2xl border-4 border-gold/30 flex items-center justify-center mx-auto">
 							<img src={HOST_LOGO} alt="ตราสัญลักษณ์" className="w-20 h-20 md:w-24 md:h-24 object-contain" />
 						</div>
 					</div>
 
-					<div className="space-y-2 mb-4">
-						<p className="text-gold-600 text-sm md:text-base font-semibold tracking-widest uppercase flex items-center justify-center gap-2">
+					<div className="space-y-3 mb-6">
+						<p className="text-gold-200 text-sm md:text-base font-semibold tracking-[0.2em] uppercase flex items-center justify-center gap-2">
 							<Sparkles size={14} /> ยินดีต้อนรับ <Sparkles size={14} />
 						</p>
-									<h1 className="text-3xl md:text-5xl font-extrabold text-royal-900 leading-tight text-balance">
-										โรงเรียนรัตนโกสินทร์สมโภชลาดกระบัง
-									</h1>
-									<h2 className="text-xl md:text-3xl font-bold text-gold-600 text-balance">
-										มีความยินดีอย่างยิ่งที่ได้ต้อนรับคณะผู้แทนสภานักเรียนในเครือสหวิทยาเขตวชิรบูรพา
-									</h2>
+						<h1 className="text-3xl md:text-5xl font-extrabold text-white leading-tight text-balance">
+							โรงเรียนรัตนโกสินทร์สมโภชลาดกระบัง
+						</h1>
+						<h2 className="text-xl md:text-3xl font-bold text-gold-200 text-balance">
+							มีความยินดีอย่างยิ่งที่ได้ต้อนรับคณะผู้แทนสภานักเรียนในเครือสหวิทยาเขตวชิรบูรพา
+						</h2>
 					</div>
 
 					<div className="ornament-divider max-w-xs mx-auto my-6">
 						<div className="diamond" />
 					</div>
 
-								<p className="text-royal-600 text-base md:text-lg max-w-2xl mx-auto mb-1 leading-relaxed font-medium text-balance">
-									อบรมโครงการส่งเสริมภาวะผู้นำและศักยภาพสภานักเรียน พร้อมระบบลงมติออนไลน์
-								</p>
+										<p className="text-gold-100 text-base md:text-lg max-w-2xl mx-auto mb-1 leading-relaxed font-medium text-balance">
+											อบรมโครงการส่งเสริมภาวะผู้นำและศักยภาพสภานักเรียน พร้อมระบบลงมติออนไลน์
+										</p>
 					<p className="text-royal-400 text-sm md:text-base mb-10">
 						สำนักงานเขตพื้นที่การศึกษามัธยมศึกษากรุงเทพมหานคร เขต 2
 					</p>
