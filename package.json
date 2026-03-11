@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build && npm run copy-static",
+    "copy-static": "node -e \"const fs=require('fs');function c(s,d){fs.mkdirSync(d,{recursive:true});fs.readdirSync(s,{withFileTypes:true}).forEach(e=>{const sp=s+'/'+e.name,dp=d+'/'+e.name;e.isDirectory()?c(sp,dp):fs.copyFileSync(sp,dp)})};c('.next/static','.next/standalone/.next/static');console.log('Copied .next/static to standalone')\"",
     "start": "node .next/standalone/server.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev --name init",
