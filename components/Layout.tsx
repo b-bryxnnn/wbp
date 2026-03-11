@@ -37,11 +37,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <div className="h-1 bg-gradient-to-r from-transparent via-gold to-transparent" />
 
         {/* Header */}
-        <header className="bg-white border-b border-gold/20 sticky top-0 z-50">
+        <header className="bg-white/90 backdrop-blur-md border-b border-gold/15 sticky top-0 z-50">
           <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-3 no-underline">
-              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-gold-400 to-gold-600 flex items-center justify-center text-white shadow-sm">
-                <Landmark size={18} />
+            <Link href="/" className="flex items-center gap-3 no-underline group">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gold-400 to-gold-600 flex items-center justify-center text-white shadow-sm group-hover:shadow-gold transition-shadow">
+                <Landmark size={20} />
               </div>
               <div>
                 <div className="text-sm font-bold text-royal-800 leading-tight">ระบบโหวตลงมติ</div>
@@ -57,10 +57,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`px-3 py-2 rounded-lg text-sm font-medium no-underline transition-colors flex items-center gap-1.5 ${
+                    className={`px-3.5 py-2 rounded-lg text-sm font-medium no-underline transition-all flex items-center gap-1.5 ${
                       active
-                        ? "bg-gold/10 text-gold-700 border border-gold/20"
-                        : "text-royal-600 hover:bg-gold/5 hover:text-gold-700"
+                        ? "bg-gradient-to-r from-gold/10 to-gold/5 text-gold-700 border border-gold/20 shadow-sm"
+                        : "text-royal-500 hover:bg-gold/5 hover:text-gold-700"
                     }`}
                   >
                     <Icon size={15} />
@@ -71,7 +71,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </nav>
 
             {/* Mobile nav */}
-            <nav className="flex md:hidden items-center gap-1">
+            <nav className="flex md:hidden items-center gap-0.5">
               {navItems.map((item) => {
                 const active = router.pathname === item.href;
                 const Icon = item.icon;
@@ -79,8 +79,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`p-2 rounded-lg no-underline transition-colors ${
-                      active ? "bg-gold/10 text-gold-700" : "text-royal-500 hover:bg-gold/5"
+                    className={`p-2.5 rounded-lg no-underline transition-all ${
+                      active ? "bg-gold/10 text-gold-700 shadow-sm" : "text-royal-400 hover:bg-gold/5"
                     }`}
                     title={item.label}
                   >
@@ -96,8 +96,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <main className="flex-1">{children}</main>
 
         {/* Footer */}
-        <footer className="border-t border-gold/20 bg-white">
-          <div className="max-w-7xl mx-auto px-4 py-4 text-center">
+        <footer className="border-t border-gold/15 bg-white/80 backdrop-blur-sm">
+          <div className="max-w-7xl mx-auto px-4 py-5 text-center">
             <div className="ornament-divider mb-3">
               <div className="diamond" />
             </div>
