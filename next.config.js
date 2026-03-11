@@ -3,6 +3,7 @@ const nextConfig = {
   reactStrictMode: true,
   output: "standalone",
   swcMinify: true,
+  transpilePackages: ["lucide-react"],
   compiler: {
     removeConsole: process.env.NODE_ENV === "production",
   },
