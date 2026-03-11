@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CopilotDiffPersistence">
+    <option name="pendingDiffs">
+      <map>
+        <entry key="$PROJECT_DIR$/tsconfig.json">
+          <value>
+            <PendingDiffInfo>
+              <option name="filePath" value="$PROJECT_DIR$/tsconfig.json" />
+              <option name="originalContent" value="{&#10;  &quot;compilerOptions&quot;: {&#10;    &quot;target&quot;: &quot;es2017&quot;,&#10;    &quot;lib&quot;: [&quot;dom&quot;, &quot;dom.iterable&quot;, &quot;esnext&quot;],&#10;    &quot;allowJs&quot;: true,&#10;    &quot;skipLibCheck&quot;: true,&#10;    &quot;strict&quot;: false,&#10;    &quot;forceConsistentCasingInFileNames&quot;: true,&#10;    &quot;noEmit&quot;: true,&#10;    &quot;esModuleInterop&quot;: true,&#10;    &quot;module&quot;: &quot;esnext&quot;,&#10;    &quot;moduleResolution&quot;: &quot;node&quot;,&#10;    &quot;resolveJsonModule&quot;: true,&#10;    &quot;isolatedModules&quot;: true,&#10;    &quot;jsx&quot;: &quot;react-jsx&quot;,&#10;    &quot;types&quot;: [&quot;node&quot;, &quot;react&quot;, &quot;react-dom&quot;],&#10;    &quot;typeRoots&quot;: [&quot;./node_modules/@types&quot;]&#10;  },&#10;  &quot;include&quot;: [&quot;next-env.d.ts&quot;, &quot;global.d.ts&quot;, &quot;**/*.ts&quot;, &quot;**/*.tsx&quot;],&#10;  &quot;exclude&quot;: [&quot;node_modules&quot;]&#10;}&#10;&#10;" />
+              <option name="updatedContent" value="{&#10;  &quot;compilerOptions&quot;: {&#10;    &quot;target&quot;: &quot;es2017&quot;,&#10;    &quot;lib&quot;: [&quot;dom&quot;, &quot;dom.iterable&quot;, &quot;esnext&quot;],&#10;    &quot;allowJs&quot;: true,&#10;    &quot;skipLibCheck&quot;: true,&#10;    &quot;strict&quot;: false,&#10;    &quot;forceConsistentCasingInFileNames&quot;: true,&#10;    &quot;noEmit&quot;: true,&#10;    &quot;esModuleInterop&quot;: true,&#10;    &quot;module&quot;: &quot;esnext&quot;,&#10;    &quot;moduleResolution&quot;: &quot;node&quot;,&#10;    &quot;resolveJsonModule&quot;: true,&#10;    &quot;isolatedModules&quot;: true,&#10;    &quot;jsx&quot;: &quot;preserve&quot;&#10;  },&#10;  &quot;include&quot;: [&quot;next-env.d.ts&quot;, &quot;**/*.ts&quot;, &quot;**/*.tsx&quot;],&#10;  &quot;exclude&quot;: [&quot;node_modules&quot;]&#10;}&#10;&#10;" />
+            </PendingDiffInfo>
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+</project>

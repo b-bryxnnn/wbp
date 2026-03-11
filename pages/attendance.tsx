@@ -14,7 +14,7 @@ export default function Attendance() {
     s.on("state:update", (data: any) => {
       setState({ attendance: data.attendance || {}, schools: data.schools || [] });
     });
-    return () => s.disconnect();
+    return () => { s.disconnect(); };
   }, []);
 
   const total = state.schools.length;

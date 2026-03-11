@@ -68,8 +68,9 @@ const addAudit = async (userId: number | null, action: string, details?: string)
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
   // @ts-ignore
-  if (!res.socket.server.io) {
-    const io = new Server(res.socket.server, { path: "/api/socket", addTrailingSlash: false });
+  if (!(res.socket as any).server.io) {
+    // @ts-ignore
+    const io = new Server((res.socket as any).server, { path: "/api/socket", addTrailingSlash: false });
 
     io.on("connection", async (socket) => {
       socket.emit("state:update", await buildState());
@@ -160,7 +161,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     });
 
     // @ts-ignore
-    res.socket.server.io = io;
+    (res.socket as any).server.io = io;
   }
   res.end();
 }

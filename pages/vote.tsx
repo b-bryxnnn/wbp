@@ -30,7 +30,7 @@ export default function Vote() {
     const s = io({ path: "/api/socket" });
     setSocket(s);
     s.on("state:update", (data: State) => setState(data));
-    return () => s.disconnect();
+    return () => { s.disconnect(); };
   }, []);
 
   useEffect(() => {
