@@ -1,4 +1,4 @@
-# Dockerfile for Next.js app with Socket.io
+# Dockerfile for Next.js app with Socket.io (standalone mode)
 FROM node:18-alpine AS builder
 WORKDIR /app
 COPY package.json package-lock.json ./
@@ -10,12 +10,15 @@ RUN npm run build
 FROM node:18-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
+ENV PORT=3000
+ENV HOSTNAME=0.0.0.0
 
-COPY --from=builder /app/package.json ./
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/.next ./.next
+# Copy standalone build output (includes server.js + minimal node_modules)
+COPY --from=builder /app/.next/standalone ./
+# Copy static assets (not included in standalone output)
+COPY --from=builder /app/.next/static ./.next/static
+# Copy prisma schema for migrations
 COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/next.config.js ./
 
 EXPOSE 3000
-CMD ["npm", "run", "start"]
+CMD ["node", "server.js"]
