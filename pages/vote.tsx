@@ -214,6 +214,8 @@ export default function VotePage() {
   );
 
   const allowedChoices = activeMotion?.allowedChoices || ["AGREE", "DISAGREE", "ABSTAIN"];
+  const chosenLabel = voted ? (CHOICE_META[voted]?.label || voted) : "ไม่ทราบตัวเลือก";
+  const chosenMotionTitle = lastMotionTitle || activeMotion?.title || "ไม่พบชื่อญัตติ";
 
   const castVote = (choice: VoteChoice) => {
     if (!socket || !activeMotion || !authToken) return;
@@ -421,9 +423,8 @@ export default function VotePage() {
                     <CheckCircle size={48} className="text-green-600" />
                   </div>
                   <div className="text-xl font-bold text-green-700 mb-1">โหวตสำเร็จแล้ว</div>
-                  <div className="text-sm text-royal-400 mt-1 space-y-1">
-                    <div>คุณเลือก <span className="font-semibold">{CHOICE_META[voted || ""]?.label || voted}</span></div>
-                    <div>ในญัตติ <span className="font-semibold">{lastMotionTitle || activeMotion?.title || ""}</span></div>
+                  <div className="text-sm text-royal-500">
+                    คุณเลือก <span className="font-semibold">{chosenLabel}</span> ในญัตติ <span className="font-semibold">{chosenMotionTitle}</span>
                   </div>
                 </div>
               ) : (
