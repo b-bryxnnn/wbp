@@ -57,6 +57,7 @@ export default function VotePage() {
   const [showVoteConfirmation, setShowVoteConfirmation] = useState(false);
   const voteConfirmTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [lastMotionTitle, setLastMotionTitle] = useState<string>("");
+  const [lastChoiceLabel, setLastChoiceLabel] = useState<string>("");
   const router = useRouter();
 
   const pushToast = useCallback((type: Toast["type"], message: string) => {
@@ -214,7 +215,7 @@ export default function VotePage() {
   );
 
   const allowedChoices = activeMotion?.allowedChoices || ["AGREE", "DISAGREE", "ABSTAIN"];
-  const chosenLabel = voted ? (CHOICE_META[voted]?.label || voted) : "ไม่ทราบตัวเลือก";
+  const chosenLabel = lastChoiceLabel || (voted ? (CHOICE_META[voted]?.label || voted) : "ไม่ทราบตัวเลือก");
   const chosenMotionTitle = lastMotionTitle || activeMotion?.title || "ไม่พบชื่อญัตติ";
 
   const castVote = (choice: VoteChoice) => {
@@ -225,6 +226,7 @@ export default function VotePage() {
     });
     setVoted(choice);
     setLastMotionTitle(activeMotion.title || "");
+    setLastChoiceLabel(CHOICE_META[choice]?.label || choice);
     setShowVoteConfirmation(true);
     if (voteConfirmTimerRef.current) clearTimeout(voteConfirmTimerRef.current);
     voteConfirmTimerRef.current = setTimeout(() => {
