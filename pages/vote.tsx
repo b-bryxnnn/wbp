@@ -422,8 +422,8 @@ export default function VotePage() {
                   </div>
                   <div className="text-xl font-bold text-green-700 mb-1">โหวตสำเร็จแล้ว</div>
                   <div className="text-sm text-royal-400 mt-1 space-y-1">
-                    <div>คุณเลือก: <span className="font-semibold">{CHOICE_META[voted || ""]?.label || voted}</span></div>
-                    {lastMotionTitle && <div>ใน: <span className="font-semibold">{lastMotionTitle}</span></div>}
+                    <div>คุณเลือก <span className="font-semibold">{CHOICE_META[voted || ""]?.label || voted}</span></div>
+                    <div>ในญัตติ <span className="font-semibold">{lastMotionTitle || activeMotion?.title || ""}</span></div>
                   </div>
                 </div>
               ) : (
