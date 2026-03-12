@@ -56,6 +56,7 @@ export default function VotePage() {
   const toastIdRef = useRef(0);
   const [showVoteConfirmation, setShowVoteConfirmation] = useState(false);
   const voteConfirmTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const [lastMotionTitle, setLastMotionTitle] = useState<string>("");
   const router = useRouter();
 
   const pushToast = useCallback((type: Toast["type"], message: string) => {
@@ -221,6 +222,7 @@ export default function VotePage() {
       schoolId: schoolId ? Number(schoolId) : undefined, voter,
     });
     setVoted(choice);
+    setLastMotionTitle(activeMotion.title || "");
     setShowVoteConfirmation(true);
     if (voteConfirmTimerRef.current) clearTimeout(voteConfirmTimerRef.current);
     voteConfirmTimerRef.current = setTimeout(() => {
@@ -418,9 +420,10 @@ export default function VotePage() {
                   <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
                     <CheckCircle size={48} className="text-green-600" />
                   </div>
-                  <div className="text-xl font-bold text-green-700 mb-1">บันทึกผลโหวตแล้ว</div>
-                  <div className="text-sm text-royal-400 mt-1">
-                    คุณเลือก: <span className="font-semibold">{CHOICE_META[voted || ""]?.label || voted}</span>
+                  <div className="text-xl font-bold text-green-700 mb-1">โหวตสำเร็จแล้ว</div>
+                  <div className="text-sm text-royal-400 mt-1 space-y-1">
+                    <div>คุณเลือก: <span className="font-semibold">{CHOICE_META[voted || ""]?.label || voted}</span></div>
+                    {lastMotionTitle && <div>ใน: <span className="font-semibold">{lastMotionTitle}</span></div>}
                   </div>
                 </div>
               ) : (
